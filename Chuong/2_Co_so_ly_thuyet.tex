@@ -1,0 +1,396 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày các cơ sở lý thuyết được sử dụng trong đồ án, bao gồm bài toán lập kế hoạch đường đi bao phủ, biểu diễn bản đồ lưới dưới dạng đồ thị, thuật toán Dijkstra, mô hình robot có hướng, mô hình năng lượng di chuyển và năng lượng quay, ràng buộc quay về căn cứ, vật cản động và vai trò của Metric H. Các nội dung trong chương được trình bày ở mức nền tảng, nhằm thống nhất ký hiệu và cách mô hình hóa trước khi Chương 3 trình bày phương pháp hiện thực cụ thể trong hệ thống mô phỏng.
+
+\section{Bài toán lập kế hoạch đường đi bao phủ}
+
+Bài toán lập kế hoạch đường đi bao phủ là bài toán tìm một chiến lược di chuyển để robot đi qua hoặc kiểm tra toàn bộ vùng làm việc cần quan tâm. Khác với bài toán tìm đường thông thường, trong đó robot chỉ cần đi từ một điểm đầu tới một điểm đích, bài toán bao phủ yêu cầu robot phải lần lượt xử lý nhiều vị trí trong môi trường. Với định hướng robot dò mìn hoặc rà soát vật nguy hiểm, một vùng được bao phủ có thể được hiểu là vùng đã được robot đi qua hoặc đưa vào phạm vi kiểm tra trong mô hình. Với các ứng dụng khác như lau nhà tự động, kiểm tra kho bãi hoặc khảo sát môi trường, ý nghĩa của bao phủ có thể được diễn giải tương ứng với nhiệm vụ cụ thể.
+
+Trong đồ án này, môi trường làm việc được rời rạc hóa thành các ô lưới. Robot di chuyển giữa các ô kề cạnh và đánh dấu các ô đã được bao phủ. Mục tiêu của nhiệm vụ là tăng tỷ lệ bao phủ các ô hợp lệ, đồng thời duy trì khả năng vận hành an toàn thông qua việc kiểm soát năng lượng còn lại và khả năng quay về căn cứ. Căn cứ được hiểu là ô xuất phát của robot và cũng là nơi robot quay về để sạc pin hoặc kết thúc nhiệm vụ.
+
+Bài toán bao phủ trong đồ án không chỉ xét số lượng ô đã đi qua, mà còn xét chi phí năng lượng của quá trình di chuyển. Chi phí này phụ thuộc vào địa hình, hướng hiện tại của robot, số lần đổi hướng và yêu cầu quay về căn cứ. Do đó, chiến lược di chuyển tốt không nhất thiết là chiến lược luôn chọn ô chưa bao phủ gần nhất theo khoảng cách hình học, mà cần xét tới chi phí tổng thể của việc đi tới mục tiêu và quay về.
+
+\section{Giả thiết mô hình và hệ ký hiệu}
+
+Để tập trung vào bài toán lập kế hoạch và đánh giá thuật toán, đồ án sử dụng một số giả thiết mô hình. Thứ nhất, môi trường được biểu diễn bằng bản đồ lưới hai chiều đã biết trong phạm vi mô phỏng. Thứ hai, robot di chuyển giữa các ô kề cạnh theo bốn hướng chính. Thứ ba, một ô được xem là đã bao phủ khi robot đi qua ô đó trong mô hình. Thứ tư, đồ án không mô phỏng trực tiếp cảm biến dò mìn, sai số định vị, sai số điều khiển hoặc động lực học chi tiết của robot ngoài thực địa. Thứ năm, vật cản động trong môi trường là các tác nhân chuyển động hợp tác, không phải đối tượng đối kháng.
+
+Các giả thiết này không nhằm khẳng định rằng bài toán dò mìn thực tế có thể được giải quyết hoàn chỉnh chỉ bằng mô hình lưới. Mục tiêu của chúng là tạo ra một khung mô phỏng đủ rõ ràng để nghiên cứu tác động của địa hình có trọng số, chi phí quay, giới hạn năng lượng, cơ chế quay về căn cứ và vật cản động tới hành vi bao phủ của robot.
+
+Các ký hiệu chính được sử dụng trong chương này được trình bày trong Bảng 2.1.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|C{0.22\textwidth}|L{0.68\textwidth}|}
+\hline
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
+\hline
+$G=(V,E)$ & Đồ thị biểu diễn bản đồ lưới, gồm tập đỉnh $V$ và tập cạnh $E$. \\
+\hline
+$V_{\text{free}}$ & Tập các ô hợp lệ mà robot có thể di chuyển qua. \\
+\hline
+$V_{\text{obs}}$ & Tập các ô vật cản tĩnh hoặc vùng không thể đi qua. \\
+\hline
+$c(v)$ & Chi phí năng lượng tương đối đã chuẩn hóa của ô $v$. \\
+\hline
+$\lambda(v)$ & Mức tiêu hao năng lượng hiệu dụng trên một đơn vị quãng đường tại ô $v$. \\
+\hline
+$E_0$ & Đơn vị năng lượng chuẩn dùng để quy đổi năng lượng vật lý sang chi phí không thứ nguyên trong mô hình thuật toán. \\
+\hline
+$C_t$ & Tập các ô đã được bao phủ tại thời điểm $t$. \\
+\hline
+$\rho_t$ & Tỷ lệ bao phủ tại thời điểm $t$. \\
+\hline
+$b$ & Căn cứ của robot, tức ô xuất phát và nơi robot quay về để sạc pin hoặc kết thúc nhiệm vụ. \\
+\hline
+$H$ & Tập các hướng di chuyển của robot. Trong mô hình lưới bốn hướng, $H=\{N,E,S,W\}$. \\
+\hline
+$q=(v,h)$ & Trạng thái có hướng của robot, gồm vị trí $v$ và hướng hiện tại $h$. \\
+\hline
+$E_{\text{move}}$ & Năng lượng di chuyển giữa hai ô kề nhau. \\
+\hline
+$E_{\text{turn}}$ & Năng lượng tiêu thụ khi robot đổi hướng. \\
+\hline
+$E_{\text{rem}}$ & Năng lượng còn lại của robot tại một thời điểm. \\
+\hline
+$L$ & Khoảng cách giữa hai bánh trong mô hình robot vi sai hai bánh. \\
+\hline
+$s$ & Độ dài cạnh của một ô lưới. \\
+\hline
+$\theta$ & Góc quay của robot. \\
+\hline
+\end{tabular}
+\caption{Một số ký hiệu sử dụng trong cơ sở lý thuyết}
+\end{table}
+
+\section{Bản đồ lưới và mô hình đồ thị}
+
+Bản đồ lưới là một cách biểu diễn phổ biến trong mô phỏng robot vì nó đơn giản, trực quan và phù hợp với bài toán bao phủ. Mỗi ô trên bản đồ tương ứng với một vùng nhỏ trong môi trường. Ô đó có thể là ô hợp lệ, ô vật cản hoặc ô hợp lệ nhưng có chi phí địa hình khác nhau. Trong mô hình này, robot di chuyển từ một ô sang một ô kề cạnh, không xét chuyển động chéo.
+
+Bản đồ lưới có thể được biểu diễn dưới dạng một đồ thị:
+
+\[
+G=(V,E).
+\]
+
+Tập đỉnh $V$ gồm toàn bộ các ô trong bản đồ. Tập đỉnh này được chia thành hai nhóm:
+
+\[
+V = V_{\text{free}} \cup V_{\text{obs}},
+\]
+
+trong đó $V_{\text{free}}$ là tập các ô hợp lệ và $V_{\text{obs}}$ là tập các ô vật cản tĩnh. Robot chỉ được phép di chuyển trên các ô thuộc $V_{\text{free}}$.
+
+Giả sử một ô $u$ có tọa độ $(r_u,c_u)$ và một ô $v$ có tọa độ $(r_v,c_v)$. Hai ô được xem là kề nhau theo bốn hướng nếu:
+
+\[
+|r_u-r_v| + |c_u-c_v| = 1.
+\]
+
+Khi đó, tập cạnh của đồ thị có thể được định nghĩa như sau:
+
+\[
+E = \{(u,v) \mid u,v \in V_{\text{free}},\ |r_u-r_v|+|c_u-c_v|=1\}.
+\]
+
+Mỗi ô hợp lệ $v$ có một trọng số địa hình $c(v)$ thỏa mãn:
+
+\[
+c(v) > 0,\quad v \in V_{\text{free}}.
+\]
+
+Trong đồ án, $c(v)$ được hiểu là chi phí năng lượng tương đối đã chuẩn hóa của ô $v$. Đại lượng này không phải là một nhãn tùy ý, mà có gốc từ trực giác vật lý rằng robot tiêu hao năng lượng khác nhau khi đi qua các loại địa hình khác nhau. Chẳng hạn, một ô nền cứng và phẳng thường dễ di chuyển hơn một ô nền mềm, bùn lầy, gồ ghề hoặc có độ trượt lớn. Trong ứng dụng thực tế, giá trị chi phí này có thể được xác định bằng đo đạc năng lượng tiêu thụ của robot trên từng loại địa hình, ước lượng từ bản đồ địa hình, hoặc suy ra từ dữ liệu cảm biến và mô hình môi trường.
+
+Về mặt thuật toán, việc gán chi phí dương cho từng ô hợp lệ làm cho bản đồ lưới trở thành một đồ thị có trọng số không âm. Nhờ đó, bài toán tìm đường không còn chỉ là tìm đường có số bước ít nhất, mà trở thành bài toán tìm đường có tổng chi phí nhỏ nhất. Đây là lý do Dijkstra phù hợp với mô hình của đồ án: thuật toán có thể tận dụng trực tiếp các trọng số $c(v)$ để ưu tiên đường đi ít tốn năng lượng hơn theo mô hình đã chuẩn hóa.
+
+Một điểm cần lưu ý là $c(v)$ mang ý nghĩa chi phí tương đối trên một thang đo chuẩn hóa. Trong nhiều phân tích lập kế hoạch, điều quan trọng không phải là giá trị tuyệt đối của một đơn vị chi phí theo Joule, mà là quan hệ tương đối giữa các ô và giữa các thao tác. Nếu toàn bộ chi phí địa hình được nhân với cùng một hệ số dương, thứ tự ưu tiên giữa các đường đi thường được giữ nguyên, còn thang năng lượng tuyệt đối chỉ thay đổi tương ứng. Vì vậy, mô hình dùng $c(v)$ như một đại lượng chuẩn hóa để so sánh đường đi, thay vì cố gắng mô phỏng đầy đủ mọi thành phần vật lý của robot ngoài thực địa.
+
+Cách biểu diễn này giữ được sự cân bằng giữa hai yêu cầu. Một mặt, nó vẫn bám vào trực giác vật lý về mức độ khó di chuyển của địa hình. Mặt khác, nó đủ đơn giản để đưa vào mô hình đồ thị và phục vụ lập kế hoạch đường đi trong môi trường lưới.
+
+\section{Tỷ lệ bao phủ và điều kiện hoàn thành nhiệm vụ}
+
+Tại thời điểm $t$, gọi $C_t$ là tập các ô đã được robot bao phủ. Khi đó, tỷ lệ bao phủ của robot được định nghĩa là:
+
+\[
+\rho_t = \frac{|C_t|}{|V_{\text{free}}|}.
+\]
+
+Trong đó $|C_t|$ là số ô đã được bao phủ và $|V_{\text{free}}|$ là tổng số ô hợp lệ cần xét trong bản đồ. Khi toàn bộ các ô hợp lệ đã được bao phủ, ta có:
+
+\[
+\rho_t = 1.
+\]
+
+Trong thực nghiệm mô phỏng, tỷ lệ bao phủ là một chỉ số quan trọng để đánh giá mức độ hoàn thành nhiệm vụ. Tuy nhiên, chỉ số này không nên được xem xét riêng lẻ. Một robot có thể đạt tỷ lệ bao phủ cao nhưng tiêu tốn quá nhiều năng lượng, đi lại nhiều lần hoặc không quay về được căn cứ. Vì vậy, trạng thái thành công của nhiệm vụ trong đồ án cần được đánh giá cùng với các yếu tố khác như năng lượng còn lại, số lần quay về sạc, số bước di chuyển, số bước đi lại và trạng thái kết thúc tại căn cứ.
+
+Với định hướng robot dò mìn hoặc rà soát vật nguy hiểm, việc bao phủ toàn bộ vùng hợp lệ giúp giảm nguy cơ bỏ sót vùng cần kiểm tra. Tuy nhiên, mô hình trong đồ án vẫn là mô hình mô phỏng thuật toán, chưa bao gồm mô hình cảm biến dò mìn thực tế. Do đó, một ô được bao phủ trong đồ án nên được hiểu là ô đã được robot xử lý trong phạm vi mô phỏng, không đồng nhất với kết luận rằng vùng ngoài thực địa đã được xác minh an toàn tuyệt đối.
+
+\section{Thuật toán Dijkstra trên đồ thị có trọng số}
+
+Dijkstra là thuật toán tìm đường đi có chi phí nhỏ nhất từ một đỉnh nguồn tới các đỉnh còn lại trong đồ thị có trọng số không âm. Trong bối cảnh bản đồ lưới, mỗi ô hợp lệ có thể được xem là một đỉnh và mỗi bước di chuyển giữa hai ô kề cạnh có thể được xem là một cạnh có trọng số.
+
+Gọi $P$ là một đường đi từ đỉnh $s$ tới đỉnh $t$:
+
+\[
+P = (v_0, v_1, \ldots, v_k),
+\]
+
+trong đó:
+
+\[
+v_0=s,\quad v_k=t.
+\]
+
+Chi phí của đường đi $P$ được tính bằng tổng trọng số các cạnh trên đường đi:
+
+\[
+\operatorname{cost}(P) = \sum_{i=1}^{k} w(v_{i-1},v_i).
+\]
+
+Mục tiêu của bài toán tìm đường là tìm đường đi có chi phí nhỏ nhất:
+
+\[
+d(t) = \min_{P:s\rightarrow t} \operatorname{cost}(P).
+\]
+
+Trong quá trình chạy Dijkstra, nếu từ đỉnh $u$ có thể đi tới đỉnh $v$, giá trị khoảng cách tạm thời của $v$ được cập nhật theo công thức:
+
+\[
+d(v) \leftarrow \min\bigl(d(v),\ d(u)+w(u,v)\bigr).
+\]
+
+Với bản đồ lưới có trọng số địa hình, một cách đặt trọng số cạnh đơn giản là lấy chi phí cạnh bằng chi phí đi vào ô kế tiếp:
+
+\[
+w(u,v)=c(v).
+\]
+
+Cách đặt trọng số này có ý nghĩa là robot tiêu tốn năng lượng tương ứng với địa hình của ô mà nó chuẩn bị đi vào. Trong đồ án, Dijkstra cơ bản là nền tảng để xây dựng phiên bản Dijkstra có hướng, trong đó trạng thái tìm đường không chỉ gồm vị trí mà còn gồm cả hướng hiện tại của robot.
+
+\section{Robot có hướng và chi phí đổi hướng}
+
+Trong bản đồ lưới bốn hướng, tập hướng của robot được định nghĩa là:
+
+\[
+H=\{N,E,S,W\}.
+\]
+
+Việc chọn bốn hướng chính là một mức rời rạc hóa tiêu biểu cho bản đồ lưới vuông. Nếu cần xét di chuyển chéo, nhiều hướng hơn hoặc góc quay mịn hơn, có thể mở rộng tập hướng $H$ và định nghĩa thêm các chi phí chuyển hướng tương ứng. Khi đó bản chất bài toán vẫn là tìm đường trên không gian trạng thái có hướng, nhưng số trạng thái và số cạnh cần xét sẽ tăng lên. Vì vậy, trong phạm vi đồ án, mô hình bốn hướng được chọn để giữ thuật toán rõ ràng, ổn định và đủ phù hợp với mục tiêu mô phỏng.
+
+Nếu chỉ xét vị trí, trạng thái của robot tại một thời điểm có thể được biểu diễn bằng một ô $v$. Tuy nhiên, khi chi phí quay được đưa vào mô hình, trạng thái cần chứa thêm hướng hiện tại của robot. Khi đó, một trạng thái có hướng được biểu diễn là:
+
+\[
+q=(v,h),
+\]
+
+trong đó $v \in V_{\text{free}}$ và $h \in H$. Không gian trạng thái mở rộng là:
+
+\[
+Q = V_{\text{free}} \times H.
+\]
+
+Một bước chuyển trạng thái có dạng:
+
+\[
+(v,h) \rightarrow (v',h').
+\]
+
+Ở đây $v'$ là ô kế tiếp và $h'$ là hướng cần có để robot đi từ $v$ tới $v'$. Chi phí của bước chuyển không chỉ gồm chi phí di chuyển, mà còn có thể gồm chi phí đổi hướng:
+
+\[
+w_q\bigl((v,h),(v',h')\bigr)
+=
+E_{\text{move}}(v,v') + E_{\text{turn}}(h,h',v).
+\]
+
+Việc đưa hướng vào trạng thái cho phép thuật toán phân biệt hai trường hợp robot đứng cùng một ô nhưng quay về hai hướng khác nhau. Hai trạng thái này có thể dẫn tới chi phí khác nhau khi robot tiếp tục di chuyển. Đây là lý do đồ án sử dụng mô hình robot có hướng trong lập kế hoạch.
+
+Chi phí đổi hướng phụ thuộc vào cấu trúc truyền động của robot. Trong phạm vi đồ án, hai trường hợp được quan tâm là robot vi sai hai bánh và robot di chuyển toàn hướng dùng nhiều bánh omni. Robot vi sai hai bánh có thân và hướng chuyển động rõ ràng, thường phải quay thân trước khi tiếp tục đi theo hướng mới. Vì vậy, chi phí quay có ý nghĩa trong mô hình năng lượng. Ngược lại, robot toàn hướng dùng bánh omni có thể thay đổi hướng chuyển động linh hoạt hơn trên mặt phẳng mà không nhất thiết phải quay thân trước, do đó trong một số mô hình có thể xem chi phí đổi hướng là nhỏ không đáng kể. Hai trường hợp này là cơ sở để đồ án so sánh mô hình có chi phí quay với Metric H.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|L{0.28\textwidth}|L{0.34\textwidth}|L{0.28\textwidth}|}
+\hline
+\textbf{Loại robot} & \textbf{Đặc điểm đổi hướng} & \textbf{Liên hệ với mô hình} \\
+\hline
+Robot vi sai hai bánh & Có thân và hướng chuyển động rõ ràng; thường phải quay thân trước khi đi theo hướng mới. & Phù hợp với mô hình có xét chi phí quay. \\
+\hline
+Robot toàn hướng nhiều bánh dùng bánh omni & Có thể thay đổi hướng chuyển động linh hoạt hơn trên mặt phẳng mà không nhất thiết phải quay thân trước. & Phù hợp với giả định chi phí quay nhỏ hoặc Metric H. \\
+\hline
+\end{tabular}
+\caption{Hai nhóm robot được xét khi mô hình hóa chi phí đổi hướng}
+\end{table}
+
+Từ Bảng 2.2 có thể thấy chi phí quay không phải là đại lượng giống nhau cho mọi cấu trúc robot. Vì vậy, đồ án không khẳng định rằng mọi robot đều tiêu tốn nhiều năng lượng khi đổi hướng. Thay vào đó, đồ án chọn robot vi sai hai bánh làm mô hình chính để khảo sát ảnh hưởng của chi phí quay, đồng thời sử dụng Metric H như một mô hình đối chứng gần với trường hợp robot toàn hướng dùng bánh omni, nơi chi phí quay có thể được xem là nhỏ không đáng kể.
+
+Hai nhóm robot trong bảng đóng vai trò đại diện cho hai mức giả định khác nhau về chi phí đổi hướng, chứ không nhằm liệt kê toàn bộ cấu trúc truyền động có thể có. Các cấu hình khác như robot bánh xích, robot dùng bánh mecanum hoặc cơ cấu swerve-drive có thể được đưa về cùng khung mô hình bằng cách điều chỉnh hệ số chi phí quay. Nếu robot đổi hướng khó hơn, hệ số này có thể tăng; nếu robot đổi hướng linh hoạt hơn, hệ số này có thể giảm và tiến gần tới trường hợp Metric H. Như vậy, bản chất của mô hình không phụ thuộc vào việc phải mô tả riêng từng loại cơ cấu truyền động, mà phụ thuộc vào cách quy đổi ảnh hưởng đổi hướng thành chi phí năng lượng trong hàm lập kế hoạch.
+
+\section{Mô hình năng lượng di chuyển và năng lượng quay}
+
+Trong đồ án, năng lượng tiêu thụ của robot được tách thành hai thành phần chính: năng lượng di chuyển và năng lượng quay. Năng lượng di chuyển gắn với việc robot đi từ một ô sang ô kề cạnh. Năng lượng quay gắn với việc robot thay đổi hướng trước khi tiếp tục di chuyển. Việc tách hai thành phần này giúp mô hình đánh giá được sự khác biệt giữa một đường đi ít đổi hướng và một đường đi liên tục phải quay thân.
+
+Trước hết, xét năng lượng di chuyển. Gọi $\lambda(v)$ là mức tiêu hao năng lượng hiệu dụng trên một đơn vị quãng đường tại ô $v$. Đại lượng này có thể hiểu là năng lượng cần thiết để robot di chuyển trên một mét địa hình thuộc ô đó, sau khi đã tính đến ảnh hưởng tổng hợp của bề mặt, ma sát, độ trượt, độ lún hoặc các yếu tố môi trường khác. Nếu độ dài cạnh của một ô lưới là $s$, năng lượng vật lý khi robot đi vào ô $v'$ có thể được viết dưới dạng:
+
+\[
+E_{\text{move}}^{\text{phys}}(v,v') = \lambda(v')s.
+\]
+
+Để đưa đại lượng năng lượng này vào thuật toán tìm đường, đồ án sử dụng một đơn vị năng lượng chuẩn $E_0$ và định nghĩa chi phí chuẩn hóa:
+
+\[
+c(v) = \frac{\lambda(v)s}{E_0}.
+\]
+
+Khi đó, trong mô hình thuật toán, năng lượng di chuyển chuẩn hóa từ ô $v$ sang ô $v'$ được viết gọn là:
+
+\[
+E_{\text{move}}(v,v') = c(v').
+\]
+
+Cách viết này cho thấy $c(v)$ không tách rời khỏi ý nghĩa vật lý. Nó là năng lượng di chuyển tương đối qua ô $v$ sau khi đã được chuẩn hóa để thuận tiện cho lập kế hoạch trên đồ thị. Nếu có dữ liệu thực nghiệm, các giá trị $c(v)$ có thể được hiệu chỉnh theo năng lượng tiêu thụ thực tế của robot trên từng loại địa hình.
+
+Tiếp theo, xét năng lượng quay. Với robot vi sai hai bánh, gọi $L$ là khoảng cách giữa hai bánh. Khi robot quay tại chỗ một góc $\theta$, mỗi bánh xe đi được một cung tròn có độ dài:
+
+\[
+d_{\text{wheel}} = \frac{L}{2}|\theta|.
+\]
+
+Tổng quãng đường tiếp xúc của hai bánh khi quay tại chỗ là $L|\theta|$. Trong khi đó, khi robot đi thẳng qua một ô có cạnh dài $s$, hai bánh cùng di chuyển quãng đường xấp xỉ $s$, nên tổng quãng đường bánh xe là $2s$. Vì vậy, nếu lấy năng lượng tiêu hao tỷ lệ với quãng đường tiếp xúc bánh xe--mặt đất, tỷ lệ giữa thao tác quay và thao tác đi thẳng qua một ô có thể được biểu diễn bởi:
+
+\[
+\frac{L|\theta|}{2s}.
+\]
+
+Khi xét ảnh hưởng của địa hình tại ô robot đang đứng, chi phí quay có thể được mô hình hóa từ chi phí năng lượng chuẩn hóa $c(v)$. Tuy nhiên, quay tại chỗ và đi thẳng không nhất thiết chịu ảnh hưởng của địa hình theo cùng một mức độ. Trong môi trường mềm hoặc bùn lầy, quay tại chỗ có thể tạo ra trượt, lún hoặc biến dạng nền khác với khi di chuyển thẳng. Vì vậy, đồ án đưa thêm hệ số hiệu chỉnh $\kappa_{\text{turn}}>0$ cho thao tác quay:
+
+\[
+E_{\text{turn}}(\theta,v)
+=
+\kappa_{\text{turn}}c(v)\frac{L|\theta|}{2s}.
+\]
+
+Hệ số $\kappa_{\text{turn}}$ cho phép điều chỉnh mức ảnh hưởng của địa hình đối với năng lượng quay. Nếu có dữ liệu đo đạc thực nghiệm, hệ số này có thể được hiệu chỉnh để phản ánh việc quay tại chỗ chịu ảnh hưởng của địa hình mạnh hơn hoặc yếu hơn so với di chuyển sang ô kề cạnh. Trong mô phỏng của đồ án, lựa chọn $\kappa_{\text{turn}}=1$ được sử dụng như một chuẩn hóa ban đầu, giúp chi phí quay và chi phí di chuyển nằm trên cùng một thang đo.
+
+Nếu chọn thêm hệ chuẩn hóa hình học:
+
+\[
+L=\frac{2s}{\pi},
+\]
+
+ta thu được:
+
+\[
+E_{\text{turn}}(\theta,v)
+=
+\kappa_{\text{turn}}c(v)\frac{|\theta|}{\pi}.
+\]
+
+Với góc quay 90 độ, tức là $\theta=\frac{\pi}{2}$, năng lượng quay là:
+
+\[
+E_{\text{turn}} = \frac{1}{2}\kappa_{\text{turn}}c(v).
+\]
+
+Với góc quay 180 độ, tức là $\theta=\pi$, năng lượng quay là:
+
+\[
+E_{\text{turn}} = \kappa_{\text{turn}}c(v).
+\]
+
+Trong trường hợp mô phỏng chọn $\kappa_{\text{turn}}=1$, quay 90 độ tại ô $v$ tiêu tốn $\frac{1}{2}c(v)$ và quay 180 độ tiêu tốn $c(v)$. Đây là lựa chọn chuẩn hóa được sử dụng để giữ chi phí quay cùng thang đo với chi phí di chuyển trên bản đồ lưới. Lựa chọn này không nhằm mô tả đầy đủ mọi hiện tượng tương tác bánh xe--mặt đất, mà nhằm tạo ra một mô hình năng lượng có cơ sở vật lý đủ rõ và có thể kiểm soát được trong thuật toán.
+
+Việc chọn $L=2s/\pi$ không có nghĩa đây là kích thước vật lý duy nhất của robot. Lựa chọn này chủ yếu đóng vai trò chuẩn hóa để thao tác quay 90 độ có chi phí bằng một nửa chi phí di chuyển qua một ô trên cùng loại địa hình. Tổng quát hơn, từ công thức $E_{\text{turn}}(\theta,v)=\kappa_{\text{turn}}c(v)L|\theta|/(2s)$ có thể thấy chi phí quay tỉ lệ thuận với tỉ lệ $L/s$. Nếu robot thực tế có tỉ lệ $L/s$ khác, mô hình vẫn giữ nguyên dạng và chỉ cần điều chỉnh hệ số tỉ lệ hình học hoặc hấp thụ khác biệt đó vào $\kappa_{\text{turn}}$. Do đó, lựa chọn $L=2s/\pi$ là một chuẩn hóa thuận tiện, không làm mất khả năng biểu diễn các mức chi phí quay khác trong cùng một khung mô hình.
+
+Với một đường đi có hướng:
+
+\[
+P=\bigl((v_0,h_0),(v_1,h_1),\ldots,(v_k,h_k)\bigr),
+\]
+
+tổng năng lượng chuẩn hóa của đường đi được tính như sau:
+
+\[
+E(P)
+=
+\sum_{i=1}^{k}
+\left[
+E_{\text{move}}(v_{i-1},v_i)
++
+E_{\text{turn}}(h_{i-1},h_i,v_{i-1})
+\right].
+\]
+
+Công thức trên là nền tảng để đánh giá một đường đi không chỉ theo số bước, mà theo tổng năng lượng tiêu thụ khi robot vừa di chuyển vừa đổi hướng.
+
+\section{Ràng buộc năng lượng và cơ chế quay về căn cứ}
+
+Robot trong đồ án có năng lượng hữu hạn. Do đó, tại mỗi thời điểm robot không chỉ cần biết mục tiêu bao phủ tiếp theo là gì, mà còn cần kiểm tra liệu năng lượng còn lại có đủ để đi tới mục tiêu đó và quay về căn cứ hay không. Gọi $E_{\text{rem}}$ là năng lượng còn lại của robot, $v$ là vị trí hiện tại, $g$ là mục tiêu bao phủ đang xét và $b$ là căn cứ. Điều kiện năng lượng cơ bản có thể viết là:
+
+\[
+E_{\text{rem}}
+\ge
+E(P_{v\rightarrow g}) + E(P_{g\rightarrow b}).
+\]
+
+Điều kiện này có nghĩa là robot chỉ nên tiếp tục chọn mục tiêu $g$ nếu sau khi đi tới $g$, robot vẫn còn đủ năng lượng để quay về căn cứ theo kế hoạch. Trong một số hệ thống thực tế, có thể bổ sung thêm một lượng dự phòng an toàn $E_{\text{safe}}$:
+
+\[
+E_{\text{rem}}
+\ge
+E(P_{v\rightarrow g}) + E(P_{g\rightarrow b}) + E_{\text{safe}}.
+\]
+
+Trong phạm vi đồ án, điều kiện quay về căn cứ đóng vai trò ràng buộc quan trọng để hạn chế việc robot đi quá xa trong khi năng lượng còn lại không đủ cho quá trình quay về. Nếu điều kiện này không được xét, robot có thể đạt lợi ích bao phủ trước mắt nhưng làm giảm khả năng duy trì nhiệm vụ trong các bước tiếp theo.
+
+Lượng dự phòng an toàn có thể được thiết kế theo nhiều cách khác nhau: một hằng số cố định, một tỷ lệ theo dung lượng pin, một hàm tăng theo độ dài đường quay về hoặc một hàm phụ thuộc vào mức độ rủi ro của môi trường. Về mặt mô hình, các lựa chọn này đều có thể được quy về một hàm dự phòng $M(d)$ phụ thuộc vào chi phí hoặc mức rủi ro của đường quay về. Do đó, khi chuyển sang triển khai ở Chương 3, đồ án sử dụng một dạng cụ thể của $M(d)$ để vừa giữ được ý nghĩa an toàn, vừa bảo đảm mô phỏng dễ kiểm soát.
+
+Cơ chế quay về căn cứ cũng giúp chia nhiệm vụ bao phủ thành các chu kỳ làm việc. Robot rời căn cứ, bao phủ một phần bản đồ, sau đó quay về để sạc hoặc kết thúc một lượt làm việc. Sau khi được nạp lại năng lượng, robot có thể tiếp tục xử lý các vùng chưa bao phủ. Cách tổ chức này phù hợp với các nhiệm vụ dài, trong đó việc hoàn thành toàn bộ bản đồ trong một lần di chuyển là giả định không thực tế.
+
+\section{Vật cản tĩnh, vật cản động và tập ô an toàn}
+
+Vật cản tĩnh là các ô không thể đi qua trong suốt quá trình mô phỏng, chẳng hạn tường, biên khu vực hoặc vùng bị chặn. Các ô này thuộc tập $V_{\text{obs}}$ và không xuất hiện trong tập cạnh mà robot được phép sử dụng. Do đó, thuật toán tìm đường chỉ hoạt động trên các ô hợp lệ thuộc $V_{\text{free}}$.
+
+Vật cản động là các đối tượng có thể thay đổi vị trí theo thời gian. Trong đồ án, vật cản động không được mô hình hóa như kẻ địch hoặc tác nhân cố tình ngăn cản robot. Chúng được xem là các đối tượng cùng tồn tại trong môi trường, có thể làm cho một số ô tạm thời không an toàn tại thời điểm robot muốn đi qua. Gọi $O_t$ là tập các ô đang bị vật cản động chiếm dụng tại thời điểm $t$. Khi đó, tập ô an toàn tại thời điểm $t$ có thể được định nghĩa là:
+
+\[
+S_t = V_{\text{free}} \setminus O_t.
+\]
+
+Một bước di chuyển tới ô $v'$ tại thời điểm $t$ chỉ hợp lệ nếu:
+
+\[
+v' \in S_t.
+\]
+
+Nếu ô kế tiếp không thuộc tập an toàn, robot cần có cơ chế ứng phó. Tùy trạng thái hiện tại, robot có thể chờ vật cản rời đi, chọn đường vòng hoặc lập kế hoạch lại. Việc xét tập ô an toàn theo thời gian giúp mô hình phản ánh được môi trường không hoàn toàn tĩnh, nhưng vẫn giữ bài toán trong phạm vi mô phỏng có kiểm soát.
+
+Tập $O_t$ cũng có thể được hiểu rộng hơn là vùng không an toàn tại thời điểm $t$, chứ không nhất thiết chỉ gồm đúng các ô mà vật cản đang chiếm dụng. Nếu cần xét vật cản có kích thước lớn hơn một ô, khoảng cách an toàn hoặc sai số định vị, có thể giãn nở vùng vật cản để tạo ra một tập $O_t$ lớn hơn. Khi đó thuật toán tìm đường không thay đổi về bản chất, vì điều kiện cốt lõi vẫn là kiểm tra ô kế tiếp có thuộc tập an toàn $S_t$ hay không.
+
+\section{Metric H và vai trò của mô hình đối chứng}
+
+Metric H được sử dụng trong đồ án như một mô hình đối chứng, trong đó chi phí quay của robot được xem là không đáng kể. Khi đó:
+
+\[
+E_{\text{turn}}(\theta,v)=0.
+\]
+
+Tổng năng lượng của một đường đi có hướng trong Metric H chỉ còn phụ thuộc vào năng lượng di chuyển:
+
+\[
+E(P)
+=
+\sum_{i=1}^{k}
+E_{\text{move}}(v_{i-1},v_i).
+\]
+
+Metric H không nên được hiểu là mô hình ưu việt hơn trong mọi trường hợp. Nó biểu diễn một giả định khác về robot, phù hợp hơn với các hệ thống có khả năng đổi hướng linh hoạt hoặc khi chi phí quay đủ nhỏ để có thể bỏ qua trong mô hình. Ngược lại, mô hình có chi phí quay phù hợp hơn khi robot có hướng thân rõ ràng và thao tác đổi hướng tạo ra năng lượng bổ sung đáng kể.
+
+Việc so sánh hai mô hình giúp đánh giá tác động của chi phí quay tới hành vi bao phủ. Nếu hai mô hình cho kết quả khác nhau về số bước, số lần quay về căn cứ, số bước đi lại hoặc năng lượng tiêu thụ, sự khác biệt đó cho thấy chi phí quay không chỉ là phần cộng thêm sau khi có đường đi, mà có thể ảnh hưởng trực tiếp tới quyết định lập kế hoạch.
+
+\section{Kết chương}
+
+Chương này đã trình bày các cơ sở lý thuyết chính được sử dụng trong đồ án. Bài toán lập kế hoạch đường đi bao phủ được mô hình hóa trên bản đồ lưới có trọng số và biểu diễn dưới dạng đồ thị. Tỷ lệ bao phủ được sử dụng để đánh giá mức độ hoàn thành nhiệm vụ, nhưng cần được xem xét cùng với năng lượng còn lại và khả năng quay về căn cứ. Thuật toán Dijkstra là nền tảng cho việc tìm đường trên đồ thị có trọng số, trong khi mô hình robot có hướng cho phép đưa chi phí quay vào trạng thái lập kế hoạch.
+
+Chương này cũng đã trình bày cách hiểu trọng số địa hình như chi phí năng lượng tương đối đã chuẩn hóa, mô hình năng lượng di chuyển, năng lượng quay, mối liên hệ giữa năng lượng quay và khoảng cách giữa hai bánh trong mô hình robot vi sai, điều kiện quay về căn cứ, tập ô an toàn trong môi trường có vật cản động và vai trò của Metric H như một mô hình đối chứng. Dựa trên các cơ sở này, Chương 3 sẽ trình bày phương pháp đề xuất và cách hiện thực hóa các thành phần lý thuyết thành một hệ thống mô phỏng cụ thể.
+
+\end{document}

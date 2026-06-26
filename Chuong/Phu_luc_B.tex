@@ -1,0 +1,77 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Phụ lục này trình bày bảng tổng hợp các kết quả thực nghiệm chính được sử dụng trong Chương 5. Các chỉ số được lấy từ log chạy cục bộ của chương trình mô phỏng. Đối với các bản đồ có chi phí địa hình đồng nhất, movement energy tương ứng với số bước di chuyển; đối với bản đồ trọng số như E07, movement energy phản ánh tổng chi phí đi qua các ô địa hình khác nhau.
+
+\section{Kết quả nhóm A và H}
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|L{0.17\textwidth}|R{0.11\textwidth}|R{0.09\textwidth}|R{0.11\textwidth}|R{0.10\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.08\textwidth}|L{0.09\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Turn} & \textbf{Revisit} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Outcome} \\
+\hline
+A01 center & 100\% & 1414 & 1625.0 & 211.0 & 491 & 10 & 9 & SUCCESS \\
+\hline
+A10 off-center & 100\% & 1512 & 1721.5 & 209.5 & 589 & 11 & 10 & SUCCESS \\
+\hline
+A09 E-center & 100\% & 1662 & 2079.0 & 417.0 & 739 & 13 & 12 & SUCCESS \\
+\hline
+A02 NW corner & 100\% & 1888 & 2122.5 & 234.5 & 965 & 13 & 12 & SUCCESS \\
+\hline
+A05 SE corner & 100\% & 1734 & 1958.0 & 224.0 & 811 & 12 & 11 & SUCCESS \\
+\hline
+H01 Metric H & 100\% & 1194 & 1194.0 & 0.0 & 271 & 8 & 7 & SUCCESS \\
+\hline
+\end{tabular}
+\caption{Tổng hợp kết quả nhóm A và H}
+\end{table}
+
+\section{Kết quả các kịch bản vận hành khó}
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|L{0.20\textwidth}|R{0.11\textwidth}|R{0.09\textwidth}|R{0.11\textwidth}|R{0.10\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.08\textwidth}|L{0.13\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Turn} & \textbf{Revisit} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Outcome} \\
+\hline
+B09 energy 050 & 55.48\% & 320 & 406.0 & 86.0 & 240 & 12 & 12 & PARTIAL\_RETURNED \\
+\hline
+C09 density 35 & 93.40\% & 1938 & 2439.5 & 501.5 & 1302 & 12 & 12 & PARTIAL\_RETURNED \\
+\hline
+D14 dynamic return & 98.59\% & 124 & 141.0 & 17.0 & 55 & 1 & 0 & FAILED \\
+\hline
+\end{tabular}
+\caption{Tổng hợp kết quả các kịch bản vận hành khó}
+\end{table}
+
+Trong B09 và C09, robot kết thúc tại căn cứ với trạng thái PARTIAL\_RETURNED. Điều này cho thấy hệ thống không cố tiếp tục bao phủ khi điều kiện năng lượng hoặc đường đi không còn bảo đảm. Trong D14, robot không kết thúc tại căn cứ do đường quay về bị ảnh hưởng bởi vật cản động trong thời gian dài. Trường hợp này được ghi nhận như một thất bại có kiểm soát, thay vì giả định nhiệm vụ luôn có thể hoàn thành.
+
+\section{Kết quả nhóm E và F}
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|L{0.18\textwidth}|C{0.12\textwidth}|R{0.10\textwidth}|R{0.09\textwidth}|R{0.12\textwidth}|R{0.12\textwidth}|R{0.10\textwidth}|R{0.08\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Kích thước} & \textbf{Free} & \textbf{Steps} & \textbf{Energy} & \textbf{Move} & \textbf{Turn} & \textbf{Ret.} \\
+\hline
+E07 gradient & 30x35 & 1050 & 1680 & 5553.0 & 5004.0 & 549.0 & 14 \\
+\hline
+F05 scale & 35x40 & 1120 & 1924 & 2320.5 & 1924.0 & 396.5 & 6 \\
+\hline
+\end{tabular}
+\caption{Tổng hợp kết quả nhóm E và F}
+\end{table}
+
+E07 cho thấy khi địa hình có trọng số, số bước không còn đủ để phản ánh chi phí nhiệm vụ vì mỗi bước có thể tiêu thụ lượng năng lượng khác nhau. F05 cho thấy hệ thống vẫn duy trì được quy trình bao phủ, quay về căn cứ và sạc lại trên bản đồ lớn hơn nhóm A, nhưng kết quả này không được dùng để khẳng định khả năng mở rộng tổng quát cho mọi bản đồ lớn.
+
+\end{document}

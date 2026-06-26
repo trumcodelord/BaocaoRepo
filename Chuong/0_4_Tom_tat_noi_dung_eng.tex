@@ -1,0 +1,15 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\begin{center}
+    \Large{\textbf{ABSTRACT}}\\
+\end{center}
+\vspace{1cm}
+
+Coverage path planning is an important task in autonomous robot systems, especially when a robot must traverse an entire area for safety-critical operations. In this thesis, the main application direction is mine detection and hazardous-object inspection in a partially known working area. In such a task, the robot needs to cover the environment as completely as possible while considering limited energy, non-uniform terrain, static obstacles, dynamic obstacles, and the ability to return to its base position for recharging or safe mission termination. Besides mine detection, the proposed model can also be adjusted for other coverage tasks such as automated cleaning, warehouse inspection, search and rescue support, and post-disaster environmental surveying.
+
+This thesis develops a grid-based coverage robot simulation system with energy constraints and dynamic obstacles. The environment is represented as a weighted grid map, where each traversable cell may have a different movement cost to simulate different terrain conditions. The path planner is based on oriented Dijkstra search, in which each state includes both the robot position and heading. This design allows movement energy and turning energy to be modeled separately. Before continuing to a target cell, the robot checks whether it can return to its base position, reducing the risk of moving deep into the working area without enough remaining energy to return. Dynamic obstacles are modeled as cooperative moving agents. They do not chase or intentionally block the robot, but they may change the safety status of grid cells over time.
+
+The final result is a C++ and OpenCV simulation program that visualizes robot behavior, records detailed logs, exports benchmark data, and supports comparison between the normal robot model with turning cost and Metric H, where turning cost is considered negligible. Experimental results show that turning energy affects not only total energy consumption, but also coverage behavior, revisit steps, return-to-base frequency, and coverage productivity within each work cycle.
+
+\end{document}

@@ -1,0 +1,24 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Phụ lục này ghi lại một số lưu ý về quá trình phân tích log và các thử nghiệm phát triển không được giữ lại trong phiên bản cuối. Mục tiêu của phụ lục không phải là mở rộng phần kết quả chính, mà là làm rõ cách số liệu được đối chiếu và cách một số quyết định kỹ thuật được đưa ra trong quá trình phát triển.
+
+\section{Ghi chú về việc đọc và tổng hợp log}
+
+Log mô phỏng có dung lượng lớn và chứa nhiều sự kiện lặp lại theo từng bước di chuyển, do đó việc đọc thủ công toàn bộ log thô cho từng kịch bản là không hiệu quả. Trong đồ án, log được sử dụng chủ yếu theo hướng trích xuất các chỉ số tổng hợp như tỷ lệ bao phủ, số bước, năng lượng tiêu thụ, năng lượng quay, số lần quay về căn cứ, số lần sạc, số bước đi lại và trạng thái kết thúc nhiệm vụ.
+
+Với các đoạn log dài hoặc có chuỗi sự kiện phức tạp, công cụ AI có thể được sử dụng như một phương tiện hỗ trợ đọc, tóm tắt và phát hiện mẫu hành vi lặp lại. Tuy nhiên, các kết luận đưa vào báo cáo vẫn được đối chiếu với các chỉ số định lượng do chương trình xuất ra và không dựa riêng vào diễn giải tự động. Nói cách khác, AI chỉ đóng vai trò hỗ trợ phân tích log hoặc hỗ trợ rà soát văn bản kỹ thuật; các giá trị định lượng trong bảng kết quả không được AI tự sinh ra mà được lấy từ log chạy thực nghiệm.
+
+\section{Thử nghiệm heuristic phát hiện island}
+
+Trong quá trình phát triển, một hướng cải tiến đã được thử nghiệm là tăng cường heuristic để nhận biết sớm các vùng có nguy cơ trở thành ``island''. Trong phạm vi đồ án, island được hiểu không chính thức là các ô hoặc cụm ô chưa được bao phủ nhưng dễ bị bỏ lại sau khi robot rời khỏi khu vực lân cận. Nếu các vùng này được xử lý ngay trong lần đi qua đầu tiên, số bước quay lại và năng lượng tiêu thụ có thể giảm trong một số trường hợp.
+
+Vấn đề chính là island không có hình dạng cố định. Nó có thể là một ô đơn lẻ, một cụm ô, một hốc cục bộ, một hành lang hẹp hoặc một vùng chỉ trở nên bất lợi sau một chuỗi quyết định bao phủ trước đó. Do vậy, một heuristic đơn giản dựa trên số lượng ô lân cận chưa đủ để nhận diện tốt các trường hợp này. Khi mở rộng heuristic để xét tính liên thông, vùng lân cận rộng hơn hoặc nhiều ứng viên mục tiêu hơn, chi phí tính toán tăng mạnh vì việc đánh giá phải được lặp lại trong vòng lặp lập kế hoạch.
+
+Lịch sử phát triển của repository code ghi nhận một chuỗi commit thử nghiệm liên quan đến hướng này, gồm \texttt{74f30b1} với thông điệp \texttt{island yeet v1}, \texttt{22c5ab6} với thông điệp \texttt{island yeet v2}, \texttt{dd544f8} với thông điệp \texttt{island yeet v3} và \texttt{ffbce52} với thông điệp \texttt{abort island optimize}. Các commit này cho thấy hướng tối ưu đã được cài đặt và thử nghiệm, sau đó không được giữ lại trong phiên bản cuối.
+
+\section{Bài học kỹ thuật}
+
+Bài học rút ra từ thử nghiệm này là heuristic không chỉ cần đúng về ý tưởng, mà còn phải phù hợp với chi phí tính toán của toàn hệ thống. Một tiêu chí chọn mục tiêu phức tạp hơn có thể cải thiện một số trường hợp cục bộ, nhưng nếu việc đánh giá phải chạy trên quá nhiều ứng viên hoặc phải phân tích lại cấu trúc bản đồ ở mỗi bước, thời gian mô phỏng có thể tăng đến mức không còn phù hợp với mục tiêu đánh giá thực nghiệm. Vì vậy, phiên bản cuối của đồ án ưu tiên chiến lược tham lam có ràng buộc năng lượng: không tối ưu toàn cục, nhưng rõ ràng, dễ kiểm chứng, chạy ổn định và phản ánh được các yếu tố chính của bài toán.
+
+\end{document}

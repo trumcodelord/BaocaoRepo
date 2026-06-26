@@ -1,0 +1,628 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+% Đặt tên caption bảng bằng tiếng Việt cho chương này.
+\renewcommand{\tablename}{Bảng}
+
+Chương này trình bày phương pháp đề xuất và thiết kế hệ thống mô phỏng của đồ án. Nếu Chương 2 đã xây dựng cơ sở lý thuyết cho bài toán bao phủ trên bản đồ lưới có trọng số, thì Chương 3 tập trung vào cách các khái niệm đó được hiện thực hóa thành một quy trình mô phỏng cụ thể. Nội dung chương bao gồm cấu trúc dữ liệu bản đồ, mô hình trạng thái robot, cách tính chi phí trong hệ thống, thuật toán Dijkstra có hướng, chiến lược chọn mục tiêu bao phủ, cơ chế quay về căn cứ, xử lý vật cản động, vòng lặp mô phỏng và hệ thống ghi nhận kết quả.
+
+\section{Tổng quan phương pháp đề xuất}
+
+Phương pháp đề xuất trong đồ án là xây dựng một hệ thống mô phỏng robot tự hành thực hiện nhiệm vụ bao phủ trên bản đồ lưới có trọng số. Hệ thống xét đồng thời các yếu tố: vật cản tĩnh, vật cản động, chi phí địa hình, hướng hiện tại của robot, năng lượng di chuyển, năng lượng quay, khả năng quay về căn cứ và trạng thái kết thúc nhiệm vụ. Cách thiết kế này hướng tới mục tiêu không chỉ làm cho robot đi qua nhiều ô nhất có thể, mà còn giúp robot duy trì khả năng vận hành an toàn trong quá trình thực hiện nhiệm vụ.
+
+Luồng xử lý tổng quát của hệ thống gồm các bước chính sau:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|C{0.10\textwidth}|L{0.26\textwidth}|L{0.54\textwidth}|}
+\hline
+\textbf{Bước} & \textbf{Pha xử lý} & \textbf{Nội dung thực hiện} \\
+\hline
+1 & Đọc dữ liệu đầu vào & Hệ thống đọc dung lượng pin, kích thước bản đồ, ma trận địa hình, danh sách vật cản động và tọa độ căn cứ. \\
+\hline
+2 & Khởi tạo mô phỏng & Khởi tạo robot, căn cứ, tập ô đã bao phủ, vật cản tĩnh, vật cản động và trạng thái nhiệm vụ ban đầu. \\
+\hline
+3 & Cập nhật môi trường & Ở mỗi bước thời gian, hệ thống cập nhật vị trí vật cản động và các ô đang tạm thời không an toàn. \\
+\hline
+4 & Lập kế hoạch & Nếu robot chưa có đường đi hiện tại, hệ thống chọn mục tiêu bao phủ và tìm đường bằng Dijkstra có hướng. \\
+\hline
+5 & Kiểm tra năng lượng & Robot chỉ chọn mục tiêu nếu năng lượng còn lại đủ để đi tới mục tiêu, quay về căn cứ và giữ phần dự phòng. \\
+\hline
+6 & Thực thi chuyển động & Nếu ô tiếp theo an toàn, robot thực hiện quay, di chuyển, tiêu hao năng lượng và cập nhật ô đã bao phủ. \\
+\hline
+7 & Ứng phó khi bị chặn & Nếu ô tiếp theo không an toàn, robot chờ, chuyển sang trạng thái cảnh báo hoặc lập kế hoạch lại. \\
+\hline
+8 & Ghi nhận kết quả & Hệ thống cập nhật log, hiển thị mô phỏng, thống kê và dữ liệu benchmark. \\
+\hline
+\end{tabular}
+\caption{Quy trình tổng quát của hệ thống mô phỏng}
+\end{table}
+
+Có thể xem hệ thống như một bộ điều khiển nhiệm vụ theo vòng lặp. Ở mỗi bước, robot không quyết định chỉ dựa trên mục tiêu gần nhất, mà còn xét chi phí đường đi, năng lượng còn lại, đường quay về căn cứ và trạng thái an toàn của môi trường. Điều này giúp mô phỏng phản ánh rõ hơn các ràng buộc thường gặp trong một nhiệm vụ dài, đặc biệt là khi robot hoạt động trong khu vực có rủi ro hoặc có các đối tượng chuyển động.
+
+Các thành phần chính của hệ thống được tóm tắt trong Bảng 3.1.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.28\textwidth}|L{0.62\textwidth}|}
+\hline
+\textbf{Thành phần} & \textbf{Vai trò trong hệ thống} \\
+\hline
+Bản đồ lưới có trọng số & Biểu diễn môi trường, vật cản tĩnh và chi phí năng lượng tương đối của từng ô hợp lệ. \\
+\hline
+Robot mô phỏng & Lưu vị trí, hướng, năng lượng, đường đi hiện tại, số bước, số lần quay về căn cứ và các thống kê nhiệm vụ. \\
+\hline
+Bộ lập kế hoạch & Tìm đường đi chi phí nhỏ nhất bằng Dijkstra có hướng trên trạng thái gồm vị trí và hướng. \\
+\hline
+Bộ chọn mục tiêu & Chọn ô chưa bao phủ có thể đi tới và vẫn bảo đảm khả năng quay về căn cứ theo ràng buộc năng lượng. \\
+\hline
+Bộ xử lý năng lượng & Tính năng lượng di chuyển, năng lượng quay, năng lượng dự phòng và điều kiện quay về căn cứ. \\
+\hline
+Bộ xử lý vật cản động & Cập nhật các ô tạm thời không an toàn, phát hiện đường bị chặn và kích hoạt chờ hoặc lập kế hoạch lại. \\
+\hline
+Bộ ghi nhận kết quả & Ghi log, thống kê, dữ liệu benchmark và ảnh trạng thái cuối để phục vụ đánh giá thực nghiệm. \\
+\hline
+\end{tabular}
+\caption{Các thành phần chính trong hệ thống mô phỏng}
+\end{table}
+
+\section{Biểu diễn dữ liệu bản đồ đầu vào}
+
+Hệ thống sử dụng bản đồ lưới hai chiều, trong đó mỗi ô có thể là ô hợp lệ hoặc ô vật cản tĩnh. Khác với mô hình lưới chỉ gồm ô trống và ô bị chặn, bản đồ trong đồ án cho phép mỗi ô hợp lệ mang một trọng số địa hình dương. Trọng số này chính là chi phí năng lượng tương đối đã chuẩn hóa như đã trình bày ở Chương 2.
+
+Trong triển khai, hệ thống chỉ yêu cầu các chi phí địa hình giữ đúng quan hệ tương đối giữa các loại ô. Điều này có nghĩa là bản đồ đầu vào không nhất thiết phải dùng trực tiếp đơn vị năng lượng vật lý như Joule. Các giá trị có thể là điểm chi phí đã chuẩn hóa, miễn là ô khó đi có chi phí lớn hơn ô dễ đi theo đúng giả định mô phỏng. Cách biểu diễn này giúp hệ thống dễ tạo bản đồ thử nghiệm, đồng thời vẫn giữ được ý nghĩa tối ưu năng lượng tương đối.
+
+Dữ liệu đầu vào của một bản đồ gồm các thành phần sau:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.28\textwidth}|L{0.62\textwidth}|}
+\hline
+\textbf{Thành phần đầu vào} & \textbf{Ý nghĩa} \\
+\hline
+Dung lượng pin ban đầu & Giá trị năng lượng tối đa của robot trong một lần sạc. \\
+\hline
+Số hàng và số cột & Kích thước bản đồ lưới. \\
+\hline
+Ma trận địa hình & Mỗi ô là một số nguyên dương biểu diễn chi phí địa hình, hoặc ký hiệu vật cản tĩnh. \\
+\hline
+Danh sách vật cản động & Mỗi vật cản động có loại và tọa độ xuất phát trên bản đồ. \\
+\hline
+Tọa độ robot xuất phát & Vị trí ban đầu của robot, đồng thời được dùng làm căn cứ. \\
+\hline
+Tùy chọn Metric H & Nếu được bật, hệ thống bỏ qua chi phí quay để tạo mô hình đối chứng. \\
+\hline
+\end{tabular}
+\caption{Cấu trúc dữ liệu đầu vào của hệ thống mô phỏng}
+\end{table}
+
+Trong quá trình đọc dữ liệu, các ô vật cản tĩnh được gán chi phí vô cùng lớn để loại khỏi quá trình tìm đường. Các ô hợp lệ phải có chi phí dương. Robot và vật cản động không được khởi tạo trên ô vật cản. Ngoài ra, vật cản động cũng không được khởi tạo trùng với căn cứ của robot. Những kiểm tra này giúp bảo đảm bản đồ đầu vào hợp lệ trước khi mô phỏng bắt đầu.
+
+Gọi bản đồ có $m$ hàng và $n$ cột. Mỗi ô được biểu diễn bởi cặp tọa độ:
+
+\[
+v=(r,c),\quad 1 \le r \le m,\quad 1 \le c \le n.
+\]
+
+Tại mỗi ô, hệ thống lưu các thông tin chính:
+
+\[
+\text{cell}(v)=\bigl(c(v),\ \text{staticBlocked}(v),\ \text{dynamicBlocked}_t(v),\ \text{covered}(v)\bigr).
+\]
+
+Trong đó $c(v)$ là chi phí địa hình của ô, $\text{staticBlocked}(v)$ cho biết ô có phải vật cản tĩnh hay không, $\text{dynamicBlocked}_t(v)$ cho biết ô có đang bị vật cản động chiếm tại thời điểm $t$ hay không, còn $\text{covered}(v)$ cho biết robot đã bao phủ ô này hay chưa. Vật cản tĩnh là ràng buộc cố định, còn vật cản động là ràng buộc thay đổi theo thời gian.
+
+Căn cứ của robot được ký hiệu là $b$. Trong hệ thống, căn cứ chính là ô xuất phát của robot:
+
+\[
+b = v_0.
+\]
+
+Robot có thể quay về căn cứ để sạc pin hoặc kết thúc nhiệm vụ. Việc xem ô xuất phát là căn cứ giúp mô hình giữ được tính đơn giản nhưng vẫn đủ để khảo sát cơ chế quay về và phục hồi năng lượng.
+
+Khi khởi tạo robot, hệ thống không cố định thủ công hướng ban đầu. Thay vào đó, bốn hướng khả dĩ được đánh giá trước nhiệm vụ. Với mỗi hướng, hệ thống chạy Dijkstra có hướng trong chế độ bỏ qua vật cản động để xác định số mục tiêu bao phủ có thể tiếp cận, chi phí trung bình tới các mục tiêu đó và số ô trống liên tiếp theo hướng thẳng ban đầu. Hướng ban đầu được chọn theo thứ tự ưu tiên: tiếp cận được nhiều mục tiêu hơn, chi phí trung bình thấp hơn, đi thẳng được xa hơn, sau đó mới dùng thứ tự hướng làm tiêu chí phụ. Cách chọn này tránh việc đưa vào một giới hạn mẫu tùy ý, đồng thời vẫn chỉ làm tăng chi phí khởi tạo thêm bốn lần chạy Dijkstra có hướng.
+
+
+Trong phiên bản hiện tại, hệ thống sử dụng một căn cứ duy nhất để tập trung vào cơ chế quay về, sạc và tiếp tục nhiệm vụ. Nếu mở rộng sang nhiều trạm sạc hoặc nhiều điểm thu hồi, có thể thay căn cứ đơn $b$ bằng một tập căn cứ $B$ và chọn điểm quay về có chi phí khả thi nhỏ nhất. Phần mở rộng đó không làm thay đổi bản chất của mô hình lập kế hoạch, nhưng không được triển khai trong phạm vi hiện tại để giữ hệ thống gọn và dễ đánh giá.
+
+\section{Mô hình trạng thái robot}
+
+Robot trong hệ thống được mô phỏng ở mức lập kế hoạch và điều khiển rời rạc trên bản đồ lưới. Tại thời điểm $t$, trạng thái chính của robot có thể được biểu diễn như sau:
+
+\[
+R_t = (v_t,\ h_t,\ E_t,\ P_t,\ mode_t).
+\]
+
+Trong đó $v_t$ là vị trí hiện tại, $h_t$ là hướng hiện tại, $E_t$ là năng lượng còn lại, $P_t$ là đường đi hiện tại mà robot đang theo, và $mode_t$ là trạng thái nhiệm vụ của robot. Ngoài các thành phần trên, hệ thống còn lưu số bước đã đi, tổng năng lượng đã dùng, năng lượng dùng cho di chuyển, năng lượng dùng cho quay, số lần quay về căn cứ, số lần sạc, các cạnh đã đi qua và vết đường di chuyển của robot.
+
+Tập hướng của robot gồm bốn hướng chính:
+
+\[
+H=\{N,E,S,W\}.
+\]
+
+Cách rời rạc hóa bốn hướng được chọn vì phù hợp với bản đồ lưới và giúp hệ thống mô phỏng ổn định. Các mô hình nhiều hướng hơn có thể được xây dựng bằng cách mở rộng tập $H$ và bổ sung chi phí chuyển hướng tương ứng, nhưng điều đó làm tăng số trạng thái mà bộ lập kế hoạch phải xử lý.
+
+Do đó, một trạng thái dùng cho lập kế hoạch đường đi có dạng:
+
+\[
+q_t=(v_t,h_t).
+\]
+
+Việc lưu hướng hiện tại là điểm khác biệt quan trọng so với mô hình chỉ xét tọa độ. Nếu hai trạng thái có cùng vị trí nhưng khác hướng, chi phí đi tiếp sang cùng một ô kề cạnh có thể khác nhau do số lần quay khác nhau. Đây là cơ sở để hệ thống sử dụng Dijkstra có hướng thay vì Dijkstra chỉ trên tọa độ ô.
+
+Trạng thái nhiệm vụ của robot được mô tả bằng các mode chính trong Bảng 3.3.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.3\textwidth}|L{0.6\textwidth}|}
+\hline
+\textbf{Trạng thái} & \textbf{Ý nghĩa} \\
+\hline
+NORMAL & Robot đang thực hiện bao phủ bình thường. \\
+\hline
+ALERT & Robot phát hiện vật cản động gần hoặc đường hiện tại bị ảnh hưởng, cần thận trọng và có thể lập kế hoạch lại. \\
+\hline
+HOLD\_SAFE & Robot tạm dừng tại vị trí an toàn khi chưa tìm được đường đi phù hợp trong ngắn hạn. \\
+\hline
+RETURN\_TO\_BASE & Robot đang quay về căn cứ do năng lượng thấp, nhiệm vụ đã bao phủ xong hoặc cần phục hồi trạng thái. \\
+\hline
+RECHARGING & Robot đã về căn cứ và đang sạc lại năng lượng. \\
+\hline
+POWER\_SAVE & Robot dừng để bảo toàn trạng thái khi không thể tiếp tục nhiệm vụ một cách an toàn. \\
+\hline
+WAIT\_FOR\_COMMAND & Robot ở tình huống tới hạn và chờ chỉ thị xử lý tiếp theo trong mô phỏng. \\
+\hline
+FINAL\_PUSH & Robot tiếp tục nhiệm vụ trong tình huống đặc biệt khi hệ thống được cấp chỉ thị tương ứng. \\
+\hline
+\end{tabular}
+\caption{Các trạng thái nhiệm vụ của robot trong hệ thống}
+\end{table}
+
+Các trạng thái này giúp mô phỏng tách rõ hành vi bao phủ, hành vi cảnh báo, hành vi quay về căn cứ và hành vi kết thúc nhiệm vụ. Đồ án không giả định robot luôn hoàn thành nhiệm vụ trong mọi trường hợp. Thay vào đó, hệ thống phân biệt các mức kết quả như hoàn thành đầy đủ, hoàn thành một phần nhưng quay về được, bảo toàn được trạng thái nhiệm vụ hoặc thất bại.
+
+\section{Cách tính chi phí trong hệ thống}
+
+Chương 2 đã trình bày mô hình năng lượng tổng quát. Trong hệ thống mô phỏng, mô hình này được cụ thể hóa theo các quy tắc rời rạc để phù hợp với bản đồ lưới bốn hướng.
+
+Khi robot đi từ ô $v$ sang ô kề cạnh $v'$, năng lượng di chuyển chuẩn hóa được tính bằng chi phí đi vào ô $v'$:
+
+\[
+E_{\text{move}}(v,v') = c_{\text{eff}}(v').
+\]
+
+Ở đây $c_{\text{eff}}(v')$ là chi phí hiệu dụng của ô $v'$ tại thời điểm lập kế hoạch. Nếu ô $v'$ là vật cản tĩnh hoặc đang bị vật cản động chiếm trong chế độ xét vật cản động, ta có:
+
+\[
+c_{\text{eff}}(v') = \infty.
+\]
+
+Việc gán chi phí vô cùng lớn tương đương với việc loại ô đó khỏi đồ thị tại thời điểm lập kế hoạch. Cách biểu diễn này thuận tiện cho cài đặt vì hệ thống vẫn giữ nguyên ma trận bản đồ, nhưng chỉ cần thay đổi chi phí hiệu dụng của ô tùy theo trạng thái vật cản tĩnh hoặc vật cản động.
+
+Ngược lại, nếu ô $v'$ hợp lệ và an toàn tại thời điểm xét, ta có:
+
+\[
+c_{\text{eff}}(v') = c(v').
+\]
+
+Chi phí quay được tính theo số lần quay 90 độ cần thiết để chuyển từ hướng hiện tại $h$ sang hướng tiếp theo $h'$. Gọi:
+
+\[
+\Delta(h,h') \in \{0,1,2\}
+\]
+
+là số lần quay 90 độ nhỏ nhất giữa hai hướng. Trong mô hình mặc định, chi phí cho một lần quay 90 độ tại ô $v$ là:
+
+\[
+\tau(v)=\frac{1}{2}c(v).
+\]
+
+Giá trị này tương ứng với chuẩn hóa $L=2s/\pi$ và $\kappa_{\text{turn}}=1$ đã trình bày ở Chương 2. Nói cách khác, trong cấu hình mặc định, một lần quay 90 độ được xem là tiêu tốn bằng một nửa chi phí di chuyển qua một ô trên cùng địa hình. Nếu xét robot có tỉ lệ hình học hoặc đặc điểm đổi hướng khác, hệ thống có thể thay đổi hệ số chi phí quay mà không phải thay đổi cấu trúc thuật toán Dijkstra có hướng.
+
+Do đó, chi phí chuyển từ trạng thái $(v,h)$ sang trạng thái $(v',h')$ là:
+
+\[
+w_q\bigl((v,h),(v',h')\bigr)
+=
+c_{\text{eff}}(v')+\Delta(h,h')\tau(v).
+\]
+
+Công thức trên là công thức chi phí trực tiếp được dùng trong Dijkstra có hướng. Nó kết hợp chi phí đi vào ô kế tiếp và chi phí quay tại ô hiện tại. Nếu robot đi thẳng theo hướng đang có, $\Delta(h,h')=0$ và chi phí chỉ còn là chi phí di chuyển. Nếu robot cần quay 90 độ, chi phí tăng thêm $\frac{1}{2}c(v)$. Nếu robot quay 180 độ, chi phí tăng thêm $c(v)$.
+
+Trong Metric H, chi phí quay được bỏ qua:
+
+\[
+\tau(v)=0.
+\]
+
+Khi đó:
+
+\[
+w_q\bigl((v,h),(v',h')\bigr)=c_{\text{eff}}(v').
+\]
+
+Bảng 3.4 tóm tắt các quy tắc chi phí được sử dụng trong mô phỏng.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.28\textwidth}|L{0.30\textwidth}|L{0.32\textwidth}|}
+\hline
+\textbf{Thao tác} & \textbf{Mô hình mặc định} & \textbf{Metric H} \\
+\hline
+Đi thẳng sang ô $v'$ & $c_{\text{eff}}(v')$ & $c_{\text{eff}}(v')$ \\
+\hline
+Quay 90 độ rồi đi & $\frac{1}{2}c(v)+c_{\text{eff}}(v')$ & $c_{\text{eff}}(v')$ \\
+\hline
+Quay 180 độ rồi đi & $c(v)+c_{\text{eff}}(v')$ & $c_{\text{eff}}(v')$ \\
+\hline
+Ô không an toàn hoặc vật cản & $\infty$ & $\infty$ \\
+\hline
+\end{tabular}
+\caption{Quy tắc tính chi phí chuyển trạng thái trong hệ thống}
+\end{table}
+
+Các giá trị năng lượng được lượng tử hóa theo bước $0.5$ đơn vị năng lượng. Điều này phù hợp với cách chuẩn hóa chi phí quay 90 độ bằng một nửa chi phí địa hình tại ô hiện tại. Nhờ đó, mô hình có thể biểu diễn được các bước quay 90 độ, quay 180 độ và di chuyển sang ô kế tiếp trên cùng một thang đo chi phí.
+
+\section{Dijkstra có hướng}
+
+Bộ lập kế hoạch của hệ thống sử dụng Dijkstra có hướng. Thay vì tìm đường trên tập ô $V_{\text{free}}$, thuật toán tìm đường trên không gian trạng thái mở rộng:
+
+\[
+Q = V_{\text{free}} \times H.
+\]
+
+Mỗi trạng thái $q=(v,h)$ gồm vị trí $v$ và hướng hiện tại $h$. Từ một trạng thái, thuật toán xét bốn hướng di chuyển có thể có. Với mỗi hướng, hệ thống xác định ô kề cạnh tương ứng, kiểm tra ô đó có hợp lệ không, sau đó tính chi phí chuyển trạng thái theo công thức đã nêu ở mục trước.
+
+Khoảng cách tối ưu tới một trạng thái được lưu dưới dạng:
+
+\[
+d(r,c,h).
+\]
+
+Trạng thái bắt đầu có chi phí bằng 0:
+
+\[
+d(r_0,c_0,h_0)=0.
+\]
+
+Khi xét một bước chuyển từ trạng thái $q$ sang trạng thái $q'$, thuật toán cập nhật:
+
+\[
+d(q') \leftarrow \min\bigl(d(q'),\ d(q)+w_q(q,q')\bigr).
+\]
+
+Pseudo-code của Dijkstra có hướng trong hệ thống có thể mô tả như sau:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|C{0.10\textwidth}|L{0.30\textwidth}|L{0.50\textwidth}|}
+\hline
+\textbf{Bước} & \textbf{Thao tác} & \textbf{Ý nghĩa} \\
+\hline
+1 & Khởi tạo bảng khoảng cách & Gán $d(r,c,h)=\infty$ cho mọi trạng thái có hướng và gán chi phí trạng thái bắt đầu bằng 0. \\
+\hline
+2 & Đưa trạng thái bắt đầu vào hàng đợi ưu tiên & Bắt đầu quá trình tìm đường từ vị trí và hướng hiện tại của robot. \\
+\hline
+3 & Lấy trạng thái có chi phí nhỏ nhất & Bảo đảm nguyên lý của Dijkstra: trạng thái được xử lý theo thứ tự chi phí không giảm. \\
+\hline
+4 & Xét bốn hướng di chuyển & Sinh các trạng thái kế tiếp tương ứng với bốn ô kề cạnh trên bản đồ lưới. \\
+\hline
+5 & Kiểm tra tính hợp lệ của ô kế tiếp & Bỏ qua ô ngoài bản đồ, ô vật cản tĩnh hoặc ô đang không an toàn theo chế độ xét vật cản động. \\
+\hline
+6 & Tính chi phí chuyển trạng thái & Kết hợp chi phí đi vào ô kế tiếp $c_{\text{eff}}(v')$ và chi phí quay $\Delta(h,h')\tau(v)$. \\
+\hline
+7 & Cập nhật trạng thái nếu tốt hơn & Nếu chi phí mới nhỏ hơn chi phí đã biết, hệ thống cập nhật bảng khoảng cách và lưu vết truy ngược. \\
+\hline
+8 & Truy vết đường đi & Sau khi chọn được mục tiêu, hệ thống khôi phục đường đi từ bảng truy vết để robot thực thi. \\
+\hline
+\end{tabular}
+\caption{Quy trình Dijkstra có hướng trong hệ thống}
+\end{table}
+
+Hệ thống lưu thêm bảng truy vết để khôi phục đường đi sau khi tìm được mục tiêu. Khi cần đường đi tới một ô đích, hệ thống không cố định trước hướng đến đích. Thay vào đó, nó xét bốn hướng có thể tại ô đích và chọn hướng có chi phí nhỏ nhất:
+
+\[
+d^*(g)=\min_{h\in H} d(g,h).
+\]
+
+Cách làm này phù hợp với bài toán bao phủ, vì mục tiêu của robot là đi tới ô cần bao phủ với chi phí thấp nhất, không bắt buộc phải đến ô đó theo một hướng cụ thể. Tuy nhiên, hướng đến đích vẫn được lưu lại vì nó ảnh hưởng tới bước lập kế hoạch tiếp theo, đặc biệt là khi cần ước lượng chi phí từ mục tiêu quay về căn cứ.
+
+\section{Chiến lược chọn mục tiêu bao phủ}
+
+Tại mỗi thời điểm cần lập kế hoạch mới, hệ thống xác định tập các ô chưa bao phủ:
+
+\[
+U_t=\{v\in V_{\text{free}} \mid \text{covered}_t(v)=false\}.
+\]
+
+Không phải mọi ô trong $U_t$ đều có thể được chọn làm mục tiêu ngay lập tức. Một ô chỉ được xem là ứng viên nếu robot có đường đi tới ô đó theo trạng thái hiện tại và đường đi này có chi phí hữu hạn. Với mỗi mục tiêu ứng viên $g$, hệ thống tính hai đại lượng:
+
+\[
+d_{\text{to}}(g)=E(P_{v_t\rightarrow g}),
+\]
+
+\[
+d_{\text{return}}(g)=E(P_{g\rightarrow b}).
+\]
+
+Trong đó $d_{\text{to}}(g)$ là chi phí từ vị trí hiện tại của robot tới mục tiêu $g$, còn $d_{\text{return}}(g)$ là chi phí ước lượng từ mục tiêu $g$ quay về căn cứ. Cả hai chi phí này đều được tính bằng Dijkstra có hướng.
+
+Hệ thống sắp xếp các ứng viên theo chi phí đi tới mục tiêu. Sau đó, lần lượt kiểm tra từng ứng viên theo điều kiện năng lượng. Gọi $M(d)$ là năng lượng dự phòng cần giữ lại cho đường quay về có chi phí $d$. Mục tiêu $g$ được xem là khả thi với năng lượng hiện tại nếu:
+
+\[
+E_t \ge d_{\text{to}}(g)+d_{\text{return}}(g)+M(d_{\text{return}}(g)).
+\]
+
+Trong mô phỏng, $M(d)$ được chọn theo nguyên tắc có một mức dự phòng tối thiểu và có thể tăng theo độ dài đường quay về. Cụ thể, hệ thống sử dụng mức dự phòng tối thiểu 15 đơn vị năng lượng và một thành phần tỷ lệ với chi phí quay về. Khi đường quay về dài hơn, robot cần thận trọng hơn vì khả năng gặp vật cản động hoặc phải lập kế hoạch lại cũng tăng lên.
+
+Pseudo-code của bước chọn mục tiêu có thể viết như sau:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|C{0.10\textwidth}|L{0.34\textwidth}|L{0.46\textwidth}|}
+\hline
+\textbf{Bước} & \textbf{Điều kiện kiểm tra} & \textbf{Hành động của hệ thống} \\
+\hline
+1 & Tồn tại ô chưa bao phủ & Tạo danh sách các ô chưa bao phủ làm ứng viên mục tiêu. \\
+\hline
+2 & Có đường từ robot tới mục tiêu & Tính chi phí $d_{\text{to}}(g)$ bằng Dijkstra có hướng. \\
+\hline
+3 & Có đường từ mục tiêu về căn cứ & Tính chi phí $d_{\text{return}}(g)$ bằng Dijkstra có hướng từ mục tiêu về căn cứ. \\
+\hline
+4 & Pin tối đa không đủ để đi và quay về & Đánh dấu mục tiêu không khả thi dài hạn và xét ứng viên tiếp theo. \\
+\hline
+5 & Pin hiện tại không đủ để đi và quay về & Đánh dấu nhu cầu quay về sạc trước khi tiếp tục bao phủ. \\
+\hline
+6 & Đủ năng lượng và đường hiện tại an toàn & Chọn mục tiêu, dựng đường đi và giao cho robot thực thi. \\
+\hline
+7 & Không có mục tiêu phù hợp tại thời điểm hiện tại & Robot chờ, lập kế hoạch lại, chuyển sang HOLD\_SAFE hoặc quay về căn cứ tùy trạng thái. \\
+\hline
+\end{tabular}
+\caption{Quy trình lựa chọn mục tiêu bao phủ}
+\end{table}
+
+Điểm quan trọng của chiến lược này là robot không chọn mục tiêu chỉ vì mục tiêu đó gần nhất theo số bước. Mục tiêu được chọn phải đồng thời thỏa mãn ba điều kiện: có đường đi tới, có đường quay về và đủ năng lượng cho cả hai chặng kèm dự phòng. Cách chọn này giúp hạn chế tình huống robot đạt thêm một phần bao phủ trước mắt nhưng làm suy giảm khả năng quay về căn cứ.
+
+Chiến lược trên thuộc nhóm chọn mục tiêu tham lam có ràng buộc. Hệ thống không tìm toàn bộ thứ tự bao phủ tối ưu cho cả nhiệm vụ, mà chọn mục tiêu khả thi tốt nhất tại thời điểm lập kế hoạch hiện tại. Lựa chọn này giúp quá trình mô phỏng ổn định, dễ kiểm tra và phù hợp với mục tiêu đánh giá tác động của chi phí quay, trọng số địa hình, năng lượng và vật cản động.
+
+\section{Cơ chế quay về căn cứ và sạc}
+
+Cơ chế quay về căn cứ là một thành phần quan trọng của hệ thống. Robot có thể chuyển sang trạng thái quay về căn cứ trong một số trường hợp: năng lượng còn lại thấp, không còn đủ năng lượng để chọn mục tiêu mới, nhiệm vụ đã bao phủ xong nhưng robot chưa ở căn cứ, hoặc môi trường bị chặn trong thời gian dài và robot cần phục hồi trạng thái.
+
+Tại vị trí hiện tại $v_t$, hệ thống ước lượng chi phí quay về căn cứ:
+
+\[
+d_b = E(P_{v_t\rightarrow b}).
+\]
+
+Robot được yêu cầu quay về nếu năng lượng còn lại nhỏ hơn hoặc bằng chi phí quay về cộng với năng lượng dự phòng:
+
+\[
+E_t \le d_b + M(d_b).
+\]
+
+Trong hệ thống, mức dự phòng được tính theo công thức khái quát:
+
+\[
+M(d_b)=\max\left(M_{\min},\ M_{\text{prop}}(d_b)\right),
+\]
+
+trong đó $M_{\min}$ là dự phòng tối thiểu và $M_{\text{prop}}(d_b)$ là thành phần dự phòng tăng theo chi phí quay về. Với cấu hình hiện tại, $M_{\min}=15$ và thành phần tỷ lệ được lấy xấp xỉ bằng $25\%$ chi phí quay về, tức:
+\[
+M_{\text{prop}}(d_b)\approx \frac{d_b}{4}.
+\]
+Giá trị này được lượng tử hóa theo bước $0.5$ để thống nhất với cách hệ thống ghi nhận năng lượng.
+
+Công thức dự phòng này là một chính sách cụ thể của hệ thống, không phải lựa chọn duy nhất có thể có. Các chính sách khác như dự phòng cố định, dự phòng theo phần trăm pin hoặc dự phòng theo mức rủi ro môi trường đều có thể được quy về một hàm $M(d)$. Trong phạm vi triển khai hiện tại, dạng $\max(M_{\min},M_{\text{prop}})$ được chọn vì dễ kiểm soát và phản ánh trực giác rằng đường quay về càng dài thì robot càng nên giữ mức dự phòng lớn hơn.
+
+Robot rơi vào vùng năng lượng tới hạn nếu:
+
+\[
+E_t \le d_b
+\]
+
+hoặc:
+
+\[
+E_t \le E_{\min}.
+\]
+
+Trong cấu hình hiện tại, $E_{\min}=3$. Trạng thái tới hạn không được hiểu là hệ thống lập tức thất bại trong mọi trường hợp. Nó là tín hiệu để robot chuyển sang các cơ chế ứng phó thận trọng hơn như chờ, tìm đường vòng, quay về nếu có thể, hoặc bảo toàn trạng thái nhiệm vụ.
+
+Khi robot về tới căn cứ, nếu nhiệm vụ chưa hoàn thành, robot chuyển sang trạng thái sạc. Sau khi sạc đầy, robot quay lại trạng thái bao phủ bình thường và tiếp tục xử lý các ô chưa bao phủ. Nếu toàn bộ bản đồ đã được bao phủ và robot đã ở căn cứ, nhiệm vụ được xem là hoàn thành đầy đủ.
+
+\section{Mô hình vật cản động và xử lý an toàn}
+
+Trong hệ thống, vật cản động được mô hình hóa như các tác nhân cùng tồn tại trong môi trường. Chúng không được thiết kế như kẻ địch, không truy đuổi robot và không cố tình chặn robot. Vai trò của chúng là làm cho một số ô trên bản đồ tạm thời trở nên không an toàn, từ đó buộc robot phải có khả năng chờ, tránh hoặc lập kế hoạch lại.
+
+Tại thời điểm $t$, gọi $O_t$ là tập ô đang bị vật cản động chiếm dụng. Khi đó, tập ô an toàn là:
+
+\[
+S_t=V_{\text{free}}\setminus O_t.
+\]
+
+Một bước đi tới ô $v'$ chỉ được phép bắt đầu nếu:
+
+\[
+v'\in S_t.
+\]
+
+Ngoài ra, hệ thống còn kiểm tra lại ô đích trước khi hoàn tất bước di chuyển. Điều này cần thiết vì vật cản động có thể thay đổi trạng thái trong khi robot đang thực hiện thao tác quay hoặc đang đi tới ô tiếp theo. Nếu ô đích trở nên không an toàn trước khi robot hoàn tất bước đi, hệ thống hủy thao tác di chuyển và chuyển sang cơ chế xử lý đường bị chặn.
+
+Vật cản động trong hệ thống gồm hai nhóm chính:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.24\textwidth}|L{0.66\textwidth}|}
+\hline
+\textbf{Loại vật cản động} & \textbf{Mô tả hành vi} \\
+\hline
+Guard & Tác nhân tuần tra cục bộ quanh vị trí tuần tra ban đầu trong một bán kính giới hạn, có các pha chờ, đi ra và quay về. \\
+\hline
+Vehicle & Tác nhân di chuyển theo hướng tuần tra, có thể chọn nhánh phụ, quay đầu trong hành lang hoặc chờ ngắn khi bị chặn. \\
+\hline
+\end{tabular}
+\caption{Hai nhóm vật cản động trong hệ thống mô phỏng}
+\end{table}
+
+Lớp cập nhật vật cản động sử dụng bản đồ chiếm dụng để đánh dấu các ô đang bị chặn. Khi vật cản động rời khỏi một ô hoặc đi vào một ô mới, hệ thống đánh dấu các ô bị thay đổi là các ô bẩn. Ở vòng lặp robot, nếu một ô bẩn ảnh hưởng đến đường đi hiện tại, đường đi đó được xóa và robot lập kế hoạch lại. Cách xử lý này giúp tránh việc robot tiếp tục đi theo một đường đã lỗi thời trong môi trường thay đổi.
+
+Khi đường hiện tại bị chặn, robot không lập tức kết luận nhiệm vụ thất bại. Hệ thống áp dụng các mức ứng phó theo thứ tự: chờ trong thời gian ngắn, chuyển sang trạng thái cảnh báo, thử lập kế hoạch lại, tạm dừng an toàn nếu bị chặn nhiều lần, tìm đường vòng khi quay về căn cứ, hoặc quay về căn cứ để phục hồi nếu chờ quá lâu. Cách xử lý này phù hợp với mục tiêu của đồ án: robot cần đối phó được với tình huống bất lợi thay vì chỉ hoạt động trong môi trường tĩnh hoàn toàn.
+
+\section{Vòng lặp mô phỏng và chuyển trạng thái}
+
+Mô phỏng được tổ chức theo các bước thời gian rời rạc. Ở mỗi bước, hệ thống cập nhật trạng thái robot, trạng thái vật cản động, đường đi hiện tại, năng lượng và dữ liệu hiển thị. Vòng lặp chính có thể được mô tả như sau:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|C{0.12\textwidth}|L{0.32\textwidth}|L{0.46\textwidth}|}
+\hline
+\textbf{Ưu tiên} & \textbf{Trạng thái hoặc điều kiện} & \textbf{Xử lý trong vòng lặp mô phỏng} \\
+\hline
+1 & Đang có thao tác quay hoặc di chuyển chưa hoàn tất & Tiếp tục pha quay hoặc pha di chuyển, cập nhật năng lượng và vị trí nếu thao tác hoàn tất. \\
+\hline
+2 & Robot đang ở trạng thái RECHARGING & Xử lý sạc pin, sau đó chuyển về NORMAL nếu nhiệm vụ còn tiếp tục. \\
+\hline
+3 & Robot ở POWER\_SAVE hoặc WAIT\_FOR\_COMMAND & Xử lý trạng thái bảo toàn hoặc chờ chỉ thị theo chính sách nhiệm vụ. \\
+\hline
+4 & Đường hiện tại bị vật cản động ảnh hưởng & Xóa đường đi cũ, chuyển trạng thái cảnh báo và chuẩn bị lập kế hoạch lại. \\
+\hline
+5 & Robot đang RETURN\_TO\_BASE & Ưu tiên xử lý đường về căn cứ, tìm đường vòng hoặc chờ nếu đường về bị chặn. \\
+\hline
+6 & Robot đang HOLD\_SAFE & Tiếp tục chờ an toàn, thử phục hồi định kỳ hoặc quay về căn cứ nếu chờ quá lâu. \\
+\hline
+7 & Năng lượng còn lại yêu cầu quay về & Chuyển sang RETURN\_TO\_BASE trước khi tiếp tục chọn mục tiêu bao phủ mới. \\
+\hline
+8 & Không có đường đi hiện tại & Chọn mục tiêu bao phủ và lập kế hoạch đường đi mới. \\
+\hline
+9 & Có đường đi và ô tiếp theo an toàn & Thực hiện bước quay, di chuyển, tiêu hao năng lượng và cập nhật bao phủ. \\
+\hline
+10 & Ô tiếp theo không an toàn & Chờ, chuyển ALERT, HOLD\_SAFE hoặc lập kế hoạch lại tùy mức độ bị chặn. \\
+\hline
+\end{tabular}
+\caption{Thứ tự xử lý trong vòng lặp mô phỏng}
+\end{table}
+
+Thiết kế này tách riêng hai loại hành động: hành động lập kế hoạch và hành động thực thi chuyển động. Khi robot đã bắt đầu một bước di chuyển, hệ thống theo dõi pha quay và pha đi tới ô tiếp theo. Năng lượng quay được tiêu thụ trong pha quay, còn năng lượng di chuyển được tiêu thụ khi robot hoàn tất bước đi vào ô mới. Cách làm này giúp mô phỏng thể hiện rõ sự khác biệt giữa chi phí quay và chi phí di chuyển, đồng thời giúp Metric H có hành vi khác biệt: trong Metric H, robot không mất năng lượng quay và không mất thời gian mô phỏng cho pha quay.
+
+Các chuyển trạng thái của robot có thể tóm tắt như sau:
+
+\[
+NORMAL \rightarrow ALERT
+\]
+
+khi có vật cản động gần hoặc đường hiện tại bị chặn;
+
+\[
+NORMAL \rightarrow RETURN\_TO\_BASE
+\]
+
+khi năng lượng còn lại không đủ an toàn để tiếp tục bao phủ;
+
+\[
+ALERT \rightarrow HOLD\_SAFE
+\]
+
+khi robot nhiều lần không tìm được bước đi an toàn;
+
+\[
+RETURN\_TO\_BASE \rightarrow RECHARGING
+\]
+
+khi robot đã về căn cứ nhưng nhiệm vụ chưa hoàn tất;
+
+\[
+RECHARGING \rightarrow NORMAL
+\]
+
+khi robot đã sạc đầy;
+
+\[
+RETURN\_TO\_BASE \rightarrow MISSION\_SUCCESS
+\]
+
+khi robot đã bao phủ xong và quay về căn cứ;
+
+\[
+HOLD\_SAFE \rightarrow RETURN\_TO\_BASE
+\]
+
+khi chờ quá lâu mà chưa khôi phục được đường bao phủ phù hợp.
+
+Những chuyển trạng thái này không nhằm tạo ra một mô hình điều khiển robot thực địa hoàn chỉnh. Chúng là một chính sách mô phỏng ở mức nhiệm vụ, giúp robot có hành vi nhất quán khi gặp các ràng buộc về năng lượng, vật cản động và điều kiện quay về.
+
+\section{Ghi log, thống kê và trực quan hóa}
+
+Để phục vụ đánh giá thực nghiệm, hệ thống không chỉ hiển thị quá trình mô phỏng mà còn ghi nhận dữ liệu chạy thử. Mỗi lượt chạy có thể tạo ra bản ghi log, ảnh trạng thái cuối, dữ liệu thống kê và bản sao đầu vào. Việc lưu lại các thông tin này giúp kết quả có thể được kiểm tra lại, so sánh giữa các cấu hình và tổng hợp thành benchmark.
+
+Các chỉ số chính được hệ thống ghi nhận gồm:
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.28\textwidth}|L{0.62\textwidth}|}
+\hline
+\textbf{Chỉ số} & \textbf{Ý nghĩa} \\
+\hline
+Tỷ lệ bao phủ & Phần trăm số ô hợp lệ đã được robot bao phủ. \\
+\hline
+Tổng số bước & Số bước robot đã di chuyển trên bản đồ. \\
+\hline
+Năng lượng đã dùng & Tổng năng lượng tiêu thụ trong quá trình mô phỏng. \\
+\hline
+Năng lượng di chuyển & Phần năng lượng dùng cho các bước đi sang ô kề cạnh. \\
+\hline
+Năng lượng quay & Phần năng lượng dùng cho thao tác đổi hướng. \\
+\hline
+Năng lượng còn lại & Năng lượng của robot tại thời điểm kết thúc mô phỏng. \\
+\hline
+Số lần quay về căn cứ & Số lần robot chuyển sang nhiệm vụ quay về căn cứ. \\
+\hline
+Số lần sạc & Số lần robot sạc lại tại căn cứ. \\
+\hline
+Kết quả nhiệm vụ & Trạng thái cuối như thành công, hoàn thành một phần hoặc thất bại. \\
+\hline
+Trạng thái kết thúc tại căn cứ & Cho biết robot có kết thúc ở căn cứ hay không. \\
+\hline
+\end{tabular}
+\caption{Một số chỉ số được ghi nhận sau mỗi lượt mô phỏng}
+\end{table}
+
+Bên cạnh dữ liệu số, hệ thống sử dụng OpenCV để trực quan hóa bản đồ và quá trình di chuyển. Các thành phần như ô vật cản, ô đã bao phủ, robot, vật cản động, trạng thái năng lượng và trạng thái nhiệm vụ được hiển thị để người dùng quan sát diễn biến mô phỏng. Tuy nhiên, đánh giá chính của đồ án không chỉ dựa trên quan sát trực quan, mà dựa trên các chỉ số có thể tổng hợp và so sánh.
+
+\section{Kết chương}
+
+Chương này đã trình bày phương pháp đề xuất và thiết kế hệ thống mô phỏng robot bao phủ bản đồ lưới có trọng số. Hệ thống sử dụng bản đồ đầu vào gồm chi phí địa hình, vật cản tĩnh, vật cản động và căn cứ. Robot được mô hình hóa bằng trạng thái gồm vị trí, hướng, năng lượng, đường đi hiện tại và trạng thái nhiệm vụ. Bộ lập kế hoạch sử dụng Dijkstra có hướng để tìm đường theo chi phí kết hợp giữa năng lượng di chuyển và năng lượng quay.
+
+Chương này cũng đã mô tả chiến lược chọn mục tiêu bao phủ có xét điều kiện quay về căn cứ, chính sách năng lượng dự phòng, cơ chế sạc, xử lý vật cản động, vòng lặp mô phỏng, các trạng thái nhiệm vụ và hệ thống ghi log, thống kê. Các thành phần này tạo thành một hệ thống mô phỏng hoàn chỉnh, có khả năng chạy thử, quan sát và thu thập dữ liệu để đánh giá. Trên cơ sở đó, Chương 4 sẽ phân tích sâu hơn các đặc điểm lý thuyết của phương pháp, bao gồm tác động của chi phí quay, điều kiện an toàn năng lượng, hành vi trong môi trường động và độ phức tạp của các bước lập kế hoạch chính.
+
+\end{document}

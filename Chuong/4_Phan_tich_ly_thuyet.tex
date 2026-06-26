@@ -1,0 +1,332 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+% Đặt tên caption bảng bằng tiếng Việt khi biên dịch riêng chương này.
+\renewcommand{\tablename}{Bảng}
+
+Chương này phân tích các lựa chọn mô hình và thuật toán đã được trình bày ở Chương 2 và Chương 3. Nếu Chương 2 đóng vai trò xây dựng cơ sở lý thuyết, Chương 3 mô tả cách hiện thực hệ thống, thì Chương 4 tập trung trả lời câu hỏi vì sao các lựa chọn đó là hợp lý trong phạm vi đồ án. Nội dung phân tích bao gồm ý nghĩa của chi phí địa hình, không gian trạng thái có hướng, chi phí quay, thuật toán Dijkstra có hướng, chiến lược chọn mục tiêu chưa bao phủ, ràng buộc năng lượng quay về căn cứ, vật cản động, vai trò của Metric H và độ phức tạp tính toán.
+
+\section{Mục tiêu và phạm vi phân tích}
+
+Bài toán bao phủ bản đồ có ràng buộc năng lượng, chi phí quay, vật cản tĩnh và vật cản động là một bài toán có nhiều thành phần phụ thuộc lẫn nhau. Nếu tìm lời giải tối ưu toàn cục cho toàn bộ thứ tự di chuyển của robot, hệ thống phải xét đồng thời vị trí, hướng, năng lượng còn lại, trạng thái bao phủ, trạng thái vật cản động và khả năng quay về căn cứ. Không gian tìm kiếm khi đó tăng rất nhanh theo kích thước bản đồ và số bước thời gian. Vì vậy, trong phạm vi đồ án, mục tiêu không phải là chứng minh một lời giải tối ưu toàn cục cho mọi trường hợp, mà là xây dựng và phân tích một phương pháp mô phỏng ổn định, có thể kiểm soát và có khả năng đánh giá thực nghiệm.
+
+Phương pháp đề xuất sử dụng cách tiếp cận cục bộ có ràng buộc. Robot chọn mục tiêu chưa bao phủ dựa trên chi phí năng lượng tại thời điểm lập kế hoạch, nhưng mục tiêu đó chỉ được chấp nhận nếu robot vẫn còn khả năng quay về căn cứ kèm phần năng lượng dự phòng. Cách tiếp cận này không bảo đảm tạo ra thứ tự bao phủ tốt nhất về mặt toàn cục, nhưng có ưu điểm là rõ ràng, dễ kiểm chứng, phù hợp với mô phỏng lặp và cho phép quan sát trực tiếp ảnh hưởng của từng thành phần mô hình.
+
+Các phân tích trong chương này tập trung vào bốn nhóm câu hỏi chính. Thứ nhất, chi phí của một ô trong bản đồ có ý nghĩa gì và tại sao có thể dùng chi phí chuẩn hóa thay cho mô hình vật lý đầy đủ. Thứ hai, vì sao cần mở rộng trạng thái từ vị trí sang cặp vị trí--hướng. Thứ ba, điều kiện năng lượng quay về căn cứ bảo vệ hệ thống ở mức nào và còn giới hạn gì. Thứ tư, vì sao đồ án chọn Dijkstra có hướng và chiến lược chọn mục tiêu tham lam có ràng buộc thay vì một thuật toán tối ưu toàn cục phức tạp hơn.
+
+\section{Phân tích mô hình chi phí địa hình}
+
+Trong bản đồ lưới có trọng số, mỗi ô hợp lệ $v$ mang một chi phí địa hình $c(v)>0$. Đại lượng này được hiểu là chi phí năng lượng tương đối đã chuẩn hóa của ô đó. Vì vậy, $c(v)$ không nên được hiểu là một nhãn tùy ý, cũng không nhất thiết phải là giá trị năng lượng tuyệt đối theo đơn vị Joule. Ý nghĩa quan trọng nhất của $c(v)$ là quan hệ tương đối giữa các ô: ô khó đi hơn phải có chi phí lớn hơn ô dễ đi hơn trong cùng thang đo mô phỏng.
+
+Cách biểu diễn này phù hợp với mục tiêu lập kế hoạch đường đi. Khi robot xét một bước đi từ ô $u$ sang ô $v$, hệ thống có thể đặt chi phí cạnh bằng chi phí đi vào ô kế tiếp:
+\[
+w(u,v)=c(v).
+\]
+Nhờ đó, thuật toán tìm đường không chỉ tối thiểu hóa số bước, mà tối thiểu hóa tổng chi phí địa hình trên đường đi. Nếu một đường có ít bước nhưng đi qua vùng có chi phí lớn, nó có thể bị đánh giá kém hơn một đường dài hơn nhưng đi qua vùng có chi phí thấp. Đây là khác biệt quan trọng giữa tìm đường trên bản đồ không trọng số và tìm đường trên bản đồ có trọng số.
+
+Một điểm cần nhấn mạnh là chi phí trong mô hình có tính chuẩn hóa. Nếu toàn bộ các chi phí địa hình được nhân với cùng một hệ số dương, quan hệ tương đối giữa các ô vẫn được giữ. Khi đó, thứ tự ưu tiên giữa nhiều đường đi thường không thay đổi nếu các thành phần chi phí khác cũng được quy đổi trên cùng thang đo. Điều này cho phép đồ án tập trung vào cấu trúc quyết định của thuật toán thay vì phải mô phỏng đầy đủ mọi đại lượng vật lý của robot ngoài thực địa.
+
+Ví dụ, giả sử có hai đường đi tới cùng một mục tiêu. Đường thứ nhất chỉ gồm 5 bước nhưng đi qua các ô có chi phí cao, tổng chi phí là 20. Đường thứ hai gồm 8 bước nhưng đi qua nền dễ di chuyển, tổng chi phí là 8. Nếu chỉ xét số bước, đường thứ nhất có vẻ tốt hơn. Nếu xét năng lượng chuẩn hóa, đường thứ hai hợp lý hơn. Đây là lý do việc đưa $c(v)$ vào mô hình không chỉ làm bản đồ nhiều thông tin hơn, mà trực tiếp thay đổi quyết định lập kế hoạch của robot.
+
+Với vật cản tĩnh hoặc ô không an toàn, hệ thống có thể gán chi phí hiệu dụng bằng $\infty$:
+\[
+c_{\text{eff}}(v)=\infty.
+\]
+Về mặt thuật toán, thao tác này tương đương với việc loại ô đó khỏi đồ thị tìm đường. Cách biểu diễn bằng $\infty$ thuận tiện cho cài đặt vì hệ thống vẫn giữ cấu trúc ma trận bản đồ, nhưng có thể thay đổi nhanh trạng thái đi được hoặc không đi được của một ô theo thời gian.
+
+\section{Phân tích không gian trạng thái có hướng}
+
+Nếu robot chỉ được biểu diễn bằng vị trí $v$, thuật toán không phân biệt được hai trường hợp robot đứng cùng một ô nhưng quay về hai hướng khác nhau. Điều này không gây vấn đề lớn khi chi phí quay bằng 0. Tuy nhiên, khi thao tác đổi hướng tiêu tốn thời gian hoặc năng lượng, hai trạng thái cùng vị trí nhưng khác hướng không còn tương đương.
+
+Vì vậy, đồ án mở rộng trạng thái tìm đường thành:
+\[
+q=(v,h),
+\]
+trong đó $v$ là ô hiện tại và $h$ là hướng hiện tại của robot. Với mô hình lưới bốn hướng:
+\[
+H=\{N,E,S,W\}.
+\]
+Không gian trạng thái có hướng là:
+\[
+Q=V_{\text{free}}\times H.
+\]
+Gọi $N=|V_{\text{free}}|$, ta có:
+\[
+|Q|=4N.
+\]
+Như vậy, so với mô hình chỉ xét vị trí, số trạng thái tăng bốn lần. Đây là chi phí tính toán phải trả để thuật toán có khả năng xét chi phí quay. Đổi lại, hệ thống có thể phân biệt được tình huống robot đang hướng Đông và đi tiếp sang ô phía Đông với tình huống robot đang hướng Bắc nhưng muốn đi sang ô phía Đông. Hai thao tác này có cùng đích đến, nhưng khác chi phí do số lần quay khác nhau.
+
+Mô hình bốn hướng là một lựa chọn đại diện cho bản đồ lưới vuông. Nếu cần xét chuyển động chéo, chuyển động tám hướng hoặc góc quay mịn hơn, có thể mở rộng tập $H$ và định nghĩa thêm các cạnh chuyển trạng thái tương ứng. Bản chất bài toán không thay đổi: robot vẫn tìm đường trên không gian trạng thái có hướng. Tuy nhiên, số trạng thái, số cạnh và số trường hợp chuyển hướng đều tăng lên. Vì vậy, đồ án chọn bốn hướng để giữ thuật toán rõ ràng, ổn định và phù hợp với phạm vi mô phỏng.
+
+\section{Phân tích chi phí quay và lựa chọn chuẩn hóa}
+
+Chi phí chuyển từ trạng thái $(v,h)$ sang trạng thái $(v',h')$ trong hệ thống có dạng:
+\[
+w_q\bigl((v,h),(v',h')\bigr)
+=
+c_{\text{eff}}(v')+\Delta(h,h')\tau(v),
+\]
+trong đó $c_{\text{eff}}(v')$ là chi phí đi vào ô kế tiếp, $\Delta(h,h')$ là số lần quay 90 độ nhỏ nhất giữa hai hướng, còn $\tau(v)$ là chi phí cho một lần quay 90 độ tại ô hiện tại.
+
+Trong mô hình mặc định của đồ án:
+\[
+\tau(v)=\frac{1}{2}c(v).
+\]
+Do đó, nếu robot đi thẳng thì $\Delta(h,h')=0$ và chi phí chỉ là chi phí đi vào ô kế tiếp. Nếu robot quay 90 độ trước khi đi, chi phí tăng thêm $\frac{1}{2}c(v)$. Nếu robot quay 180 độ, chi phí tăng thêm $c(v)$.
+
+Cách chọn này xuất phát từ chuẩn hóa đã nêu ở Chương 2. Với robot vi sai hai bánh, nếu gọi $L$ là khoảng cách giữa hai bánh và $s$ là độ dài cạnh của một ô lưới, chi phí quay tại chỗ có thể được mô hình hóa tỷ lệ với:
+\[
+\frac{L|\theta|}{2s}.
+\]
+Khi chọn:
+\[
+L=\frac{2s}{\pi},
+\]
+ta có:
+\[
+E_{\text{turn}}(\theta,v)
+=
+\kappa_{\text{turn}}c(v)\frac{|\theta|}{\pi}.
+\]
+Với $\theta=\frac{\pi}{2}$ và $\kappa_{\text{turn}}=1$, chi phí quay 90 độ bằng:
+\[
+E_{\text{turn}}\left(\frac{\pi}{2},v\right)=\frac{1}{2}c(v).
+\]
+Với $\theta=\pi$, chi phí quay 180 độ bằng:
+\[
+E_{\text{turn}}(\pi,v)=c(v).
+\]
+
+Bước lượng tử năng lượng $0.5$ trong triển khai cũng xuất phát từ lựa chọn này. Vì chi phí quay 90 độ trong mô hình mặc định bằng một nửa chi phí địa hình tại ô hiện tại, hệ thống cần một đơn vị ghi nhận nhỏ hơn 1 để không làm mất phần chi phí quay này. Lượng tử hóa theo bước $0.5$ giúp log và thống kê năng lượng dễ đọc, đồng thời vẫn giữ được khác biệt giữa đi thẳng, quay 90 độ và quay 180 độ.
+
+
+Điểm quan trọng là lựa chọn $L=2s/\pi$ không phải là khẳng định rằng mọi robot vật lý đều có kích thước như vậy. Đây là một chuẩn hóa để đưa chi phí quay và chi phí di chuyển về cùng một thang đo dễ diễn giải. Nếu robot có tỷ lệ $L/s$ khác, chi phí quay vẫn thay đổi tỉ lệ thuận theo $L/s$. Sự khác biệt đó có thể được biểu diễn bằng cách thay đổi hệ số $\kappa_{\text{turn}}$ hoặc hệ số quay tương ứng. Nói cách khác, đồ án chọn một trường hợp tiêu biểu để cài đặt và đánh giá, còn các tỷ lệ hình học khác có thể quy đổi trong cùng mô hình.
+
+Cách phân tách này cũng giúp mô hình bao quát nhiều cấu trúc robot khác nhau. Với robot vi sai hai bánh hoặc robot có thân và hướng di chuyển rõ ràng, chi phí quay có thể đáng kể và cần được xét trong lập kế hoạch. Với robot toàn hướng dùng bánh omni, hoặc các hệ có khả năng đổi hướng linh hoạt, chi phí quay có thể được xem là nhỏ không đáng kể trong phạm vi mô hình. Khi đó, Metric H đóng vai trò đối chứng bằng cách đặt:
+\[
+\tau(v)=0.
+\]
+Như vậy, nhiều cấu trúc truyền động khác nhau có thể được nhìn như các trường hợp khác nhau của cùng một mô hình chi phí quay.
+
+\section{Phân tích Dijkstra có hướng}
+
+Dijkstra có hướng trong đồ án thực chất là Dijkstra trên đồ thị trạng thái $Q=V_{\text{free}}\times H$. Mỗi trạng thái là một cặp vị trí--hướng. Từ một trạng thái, thuật toán xét tối đa bốn hướng di chuyển kế tiếp. Nếu ô kế tiếp hợp lệ và an toàn, thuật toán tính chi phí chuyển trạng thái rồi thực hiện bước cập nhật:
+\[
+d(q') \leftarrow \min\bigl(d(q'), d(q)+w_q(q,q')\bigr).
+\]
+
+Vì các chi phí địa hình dương và chi phí quay không âm, trọng số cạnh trong đồ thị trạng thái là không âm. Điều này phù hợp với điều kiện sử dụng Dijkstra. Do đó, tại một thời điểm lập kế hoạch cố định, Dijkstra có hướng tìm được đường có chi phí nhỏ nhất từ trạng thái hiện tại tới các trạng thái đích theo mô hình chi phí đang xét.
+
+Tuy nhiên, cần phân biệt rõ hai mức tối ưu. Dijkstra có hướng tối ưu cho bài toán tìm đường giữa một trạng thái bắt đầu và một mục tiêu cụ thể tại thời điểm lập kế hoạch. Nó không tự động tạo ra thứ tự bao phủ tối ưu cho toàn bộ nhiệm vụ. Bài toán bao phủ toàn cục còn liên quan tới việc chọn mục tiêu nào trước, quay về căn cứ khi nào, xử lý vật cản động ra sao và sạc lại bao nhiêu lần. Vì vậy, Dijkstra là thành phần tìm đường cục bộ tối ưu, còn toàn bộ hệ thống vẫn là một chính sách bao phủ có ràng buộc.
+
+Một ưu điểm của Dijkstra có hướng là tính rõ ràng và dễ kiểm chứng. Mỗi thành phần chi phí đều xuất hiện trực tiếp trong trọng số cạnh: chi phí đi vào ô kế tiếp, chi phí quay tại ô hiện tại và trạng thái an toàn của ô. Vì vậy, khi thay đổi mô hình chi phí, ảnh hưởng của thay đổi đó đi vào quá trình lập kế hoạch, chứ không chỉ được cộng thêm sau khi đường đi đã được chọn.
+
+Một lựa chọn triển khai liên quan là hướng ban đầu của robot. Nếu hướng ban đầu được đặt tùy ý, mô hình có thể tạo ra chi phí quay phụ thuộc vào lựa chọn khởi tạo hơn là phụ thuộc vào cấu trúc bản đồ. Vì vậy, hệ thống đánh giá cả bốn hướng ban đầu bằng cùng mô hình Dijkstra có hướng. Tiêu chí chọn hướng gồm số mục tiêu có thể tiếp cận, chi phí trung bình tới các mục tiêu đó và độ dài vùng trống phía trước. Cách làm này không nhằm tối ưu toàn bộ nhiệm vụ từ thời điểm ban đầu, mà nhằm chọn một hướng xuất phát hợp lý, không dựa trên một giới hạn mẫu tùy ý và không cần thêm tham số khó giải thích.
+
+
+\section{Phân tích chiến lược chọn mục tiêu bao phủ}
+
+Tại mỗi thời điểm cần lập kế hoạch, hệ thống xét tập các ô chưa bao phủ:
+\[
+U_t=\{v\in V_{\text{free}}\mid \text{covered}_t(v)=false\}.
+\]
+Với mỗi ứng viên $g\in U_t$, hệ thống ước lượng chi phí đi từ vị trí hiện tại tới mục tiêu:
+\[
+d_{\text{to}}(g)=E(P_{v_t\rightarrow g}),
+\]
+và chi phí từ mục tiêu quay về căn cứ:
+\[
+d_{\text{return}}(g)=E(P_{g\rightarrow b}).
+\]
+Một mục tiêu chỉ được xem là khả thi nếu:
+\[
+E_t \ge d_{\text{to}}(g)+d_{\text{return}}(g)+M(d_{\text{return}}(g)).
+\]
+Trong đó $M(d_{\text{return}}(g))$ là phần năng lượng dự phòng cho đường quay về.
+
+Chiến lược chọn mục tiêu của đồ án có thể xem là chiến lược tham lam có ràng buộc năng lượng. Robot ưu tiên các mục tiêu có chi phí đi tới thấp, nhưng chỉ chọn mục tiêu nếu mục tiêu đó thỏa mãn điều kiện quay về căn cứ. Như vậy, hệ thống không tham lam tuyệt đối theo mục tiêu gần nhất, mà là tham lam trong tập các mục tiêu khả thi.
+
+Cách chọn này có một số ưu điểm thực tế. Thứ nhất, nó đơn giản và phù hợp với mô phỏng lặp theo thời gian. Thứ hai, nó dễ kết hợp với Dijkstra có hướng và mô hình chi phí địa hình. Thứ ba, nó cho phép robot phản ứng khi môi trường thay đổi, vì mỗi lần đường đi bị ảnh hưởng, hệ thống có thể lập kế hoạch lại từ trạng thái hiện tại.
+
+Đổi lại, chiến lược này không bảo đảm thứ tự bao phủ tối ưu toàn cục. Có những trường hợp một mục tiêu gần tại thời điểm hiện tại không phải là lựa chọn tốt nhất nếu xét toàn bộ chuỗi mục tiêu tương lai. Các phương pháp toàn cục hơn như tối ưu theo thứ tự thăm, biến thể TSP/VRP, quy hoạch nguyên hoặc học tăng cường có thể được nghiên cứu trong các hướng mở rộng. Tuy nhiên, các phương pháp đó làm tăng đáng kể độ phức tạp tính toán, độ khó cài đặt và độ khó kiểm chứng. Trong phạm vi đồ án, lựa chọn tham lam có ràng buộc là hợp lý vì nó cân bằng giữa chất lượng hành vi, tính ổn định của mô phỏng và khả năng đánh giá thực nghiệm.
+
+\section{Phân tích ràng buộc năng lượng quay về căn cứ}
+
+Ràng buộc quay về căn cứ là một điểm quan trọng để tránh việc robot đi quá xa rồi không còn đủ năng lượng để quay lại. Điều kiện:
+\[
+E_t \ge d_{\text{to}}(g)+d_{\text{return}}(g)+M(d_{\text{return}}(g))
+\]
+có nghĩa là robot chỉ chọn mục tiêu $g$ nếu năng lượng hiện tại đủ cho ba phần: đi tới mục tiêu, từ mục tiêu quay về căn cứ và giữ lại một phần dự phòng.
+
+Điều kiện này là một bảo đảm có điều kiện trong mô hình tại thời điểm lập kế hoạch. Nó không phải là bảo đảm tuyệt đối cho mọi diễn biến tương lai, vì vật cản động có thể xuất hiện, đường về có thể bị chặn tạm thời hoặc robot phải chờ và lập kế hoạch lại. Vì vậy, hệ thống không chỉ kiểm tra năng lượng một lần, mà còn có trạng thái quay về căn cứ, trạng thái cảnh báo, trạng thái chờ an toàn và cơ chế tìm đường lại khi cần.
+
+Trong triển khai, phần dự phòng được mô hình hóa bằng hàm:
+\[
+M(d)=\max(M_{\min}, M_{\text{prop}}(d)).
+\]
+Trong cấu hình hiện tại, thành phần tỷ lệ được chọn xấp xỉ bằng $25\%$ chi phí đường quay về, tương ứng với hệ số chia 4:
+\[
+M_{\text{prop}}(d)\approx \frac{d}{4}.
+\]
+Mức $25\%$ được chọn như một giá trị trung gian giữa hai cực đoan. Nếu dự phòng quá nhỏ, robot có thể tiếp tục đi sâu vào bản đồ khi chỉ còn vừa đủ năng lượng quay về theo đường hiện tại; khi gặp vật cản động, phải chờ hoặc phải đi vòng, trạng thái nhiệm vụ sẽ rủi ro hơn. Ngược lại, nếu dự phòng quá lớn, robot sẽ quay về căn cứ quá sớm và làm giảm hiệu quả bao phủ trong mỗi chu kỳ làm việc.
+
+Bên cạnh thành phần tỷ lệ, hệ thống dùng mức dự phòng tối thiểu $M_{\min}=15$. Giá trị này bảo đảm rằng ngay cả khi đường quay về ngắn, robot vẫn giữ lại một khoảng đệm năng lượng cho các thao tác phát sinh như quay, chờ, lập kế hoạch lại hoặc đi vòng ngắn. Nếu chỉ dùng tỷ lệ theo $d$, các đường về rất ngắn sẽ tạo ra mức dự phòng quá nhỏ.
+
+Dạng này không phải công thức dự phòng duy nhất. Có thể thiết kế dự phòng cố định, dự phòng theo phần trăm dung lượng pin, dự phòng theo xác suất gặp vật cản hoặc dự phòng theo mức rủi ro địa hình. Tuy nhiên, các lựa chọn đó đều có thể quy về một hàm dự phòng $M(d)$ hoặc một biến thể của nó. Vì vậy, đồ án chọn dạng tối thiểu cộng thành phần tỷ lệ để giữ chính sách dễ hiểu, dễ cài đặt và phù hợp với mục tiêu đánh giá.
+
+Ngưỡng năng lượng tới hạn $E_{\min}=3$ được dùng như tín hiệu cho thấy robot chỉ còn rất ít năng lượng để thực hiện thêm thao tác trong mô hình. Đây không phải là ngưỡng thất bại tuyệt đối, mà là điều kiện để hệ thống chuyển sang hành vi thận trọng hơn như ưu tiên quay về, chờ chỉ thị hoặc bảo toàn trạng thái nhiệm vụ.
+
+Một chi tiết thực tế khác là khi robot đang quay về căn cứ, đường về chỉ nên được chấp nhận nếu năng lượng còn lại lớn hơn chi phí đường về. Nếu robot về tới căn cứ với đúng 0 năng lượng, trạng thái này vẫn có thể được xem là rủi ro trong mô phỏng. Do đó, việc yêu cầu còn dư năng lượng sau đường về giúp chính sách quay về thận trọng hơn.
+
+Trong phiên bản hiện tại, đồ án sử dụng một căn cứ duy nhất trùng với vị trí xuất phát. Đây là lựa chọn đơn giản để tập trung vào cơ chế quay về và sạc. Nếu mở rộng sang nhiều căn cứ hoặc nhiều trạm sạc, có thể thay căn cứ đơn $b$ bằng tập căn cứ $B$ và định nghĩa:
+\[
+d_{\text{return}}(g)=\min_{b\in B}E(P_{g\rightarrow b}).
+\]
+Khi đó bản chất của điều kiện năng lượng không thay đổi, chỉ thay đổi cách tính đường quay về khả thi nhất.
+
+\section{Phân tích vật cản động và cơ chế lập kế hoạch lại}
+
+Trong môi trường tĩnh, một đường đi đã được tính toán có thể được xem là hợp lệ cho tới khi robot đi hết đường đó. Trong môi trường có vật cản động, giả định này không còn đúng. Một ô an toàn tại thời điểm $t$ có thể trở thành không an toàn tại thời điểm $t+1$. Vì vậy, hệ thống phải xem đường đi hiện tại là một kế hoạch tạm thời, không phải cam kết bất biến.
+
+Gọi $O_t$ là tập ô không an toàn tại thời điểm $t$, tập ô an toàn được định nghĩa là:
+\[
+S_t=V_{\text{free}}\setminus O_t.
+\]
+Một bước đi tới ô $v'$ chỉ hợp lệ nếu:
+\[
+v'\in S_t.
+\]
+Khi phát hiện ô kế tiếp không an toàn, robot không tiếp tục thực hiện đường đi cũ. Thay vào đó, hệ thống có thể chờ vật cản rời đi, chuyển sang trạng thái cảnh báo, lập kế hoạch lại hoặc quay về căn cứ tùy theo trạng thái năng lượng và nhiệm vụ.
+
+Điểm đáng chú ý là vật cản động không làm Dijkstra có hướng sai về mặt thuật toán. Dijkstra vẫn tìm đường tốt nhất trên trạng thái bản đồ mà nó nhận tại thời điểm lập kế hoạch. Vấn đề là trạng thái bản đồ thay đổi theo thời gian. Vì vậy, giải pháp phù hợp là kết hợp Dijkstra với cơ chế kiểm tra an toàn liên tục và lập kế hoạch lại khi đường hiện tại không còn hợp lệ.
+
+Tập $O_t$ cũng có thể được hiểu rộng hơn là vùng không an toàn, không nhất thiết chỉ gồm đúng ô mà vật cản đang chiếm. Nếu muốn xét kích thước vật cản lớn hơn một ô, khoảng cách an toàn, vùng đệm quanh người hoặc sai số định vị, có thể giãn nở $O_t$. Thuật toán không thay đổi về bản chất, vì điều kiện cốt lõi vẫn là kiểm tra ô kế tiếp có thuộc $S_t$ hay không.
+
+\section{Phân tích Metric H như mô hình đối chứng}
+
+Metric H là mô hình đối chứng trong đó chi phí quay được xem là không đáng kể:
+\[
+\tau(v)=0.
+\]
+Khi đó, chi phí chuyển trạng thái chỉ còn:
+\[
+w_q\bigl((v,h),(v',h')\bigr)=c_{\text{eff}}(v').
+\]
+Metric H không nên được hiểu là mô hình ưu việt hơn trong mọi trường hợp. Nó biểu diễn một giả định khác về robot: thao tác đổi hướng không tạo ra chi phí đáng kể trong phạm vi mô hình. Giả định này phù hợp hơn với các hệ có khả năng đổi hướng linh hoạt hoặc khi mục tiêu phân tích là tách riêng ảnh hưởng của chi phí quay.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.25\textwidth}|L{0.32\textwidth}|L{0.33\textwidth}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Mô hình có chi phí quay} & \textbf{Metric H} \\
+\hline
+Chi phí quay & Được tính vào trọng số cạnh thông qua $\tau(v)$. & Được xem là không đáng kể, $\tau(v)=0$. \\
+\hline
+Ảnh hưởng của hướng & Hướng hiện tại ảnh hưởng trực tiếp tới chi phí bước kế tiếp. & Hướng còn được lưu trong trạng thái nhưng không làm tăng chi phí quay. \\
+\hline
+Xu hướng đường đi & Có thể ưu tiên đường ít đổi hướng hơn nếu tổng chi phí thấp hơn. & Có thể đổi hướng nhiều hơn vì thao tác quay không bị phạt năng lượng. \\
+\hline
+Vai trò trong đồ án & Mô hình chính để khảo sát robot có thân và hướng chuyển động rõ ràng. & Mô hình đối chứng để đánh giá ảnh hưởng của việc bỏ qua chi phí quay. \\
+\hline
+\end{tabular}
+\caption{So sánh mô hình có chi phí quay và Metric H}
+\end{table}
+
+Việc so sánh Metric H với mô hình có chi phí quay giúp trả lời một câu hỏi quan trọng: chi phí quay chỉ làm tăng tổng năng lượng sau khi robot đã chọn đường, hay nó làm thay đổi cả đường đi được chọn. Do chi phí quay nằm trực tiếp trong trọng số cạnh của Dijkstra có hướng, nó có thể ảnh hưởng ngay trong quá trình lập kế hoạch. Vì vậy, nếu hai mô hình cho hành vi khác nhau về số bước, số lần quay về, số ô đi lại hoặc năng lượng tiêu thụ, sự khác biệt đó phản ánh tác động thực sự của giả định chi phí quay.
+
+\section{Phân tích độ phức tạp tính toán}
+
+Gọi $N=|V_{\text{free}}|$ là số ô hợp lệ trong bản đồ. Với bốn hướng, số trạng thái có hướng là:
+\[
+|Q|=4N.
+\]
+Từ mỗi trạng thái, robot xét tối đa bốn hướng di chuyển kế tiếp. Do đó số cạnh trạng thái có thể được chặn trên bởi:
+\[
+|E_Q|\le 16N.
+\]
+Dijkstra dùng hàng đợi ưu tiên có độ phức tạp:
+\[
+O\bigl((|Q|+|E_Q|)\log |Q|\bigr).
+\]
+Thay các chặn trên vào, ta có:
+\[
+O(N\log N),
+\]
+vì các hệ số 4 và 16 là hằng số đối với mô hình bốn hướng.
+
+Khi chọn mục tiêu bao phủ, hệ thống không chỉ chạy một lần tìm đường. Trước hết, Dijkstra được dùng để tính chi phí từ robot tới các ô chưa bao phủ. Sau đó, với một số ứng viên, hệ thống cần ước lượng chi phí từ mục tiêu đó quay về căn cứ. Nếu trong một lần chọn mục tiêu có $k$ ứng viên được đánh giá sâu bằng Dijkstra có hướng, chi phí có thể mô tả ở mức khái quát là:
+\[
+O\bigl((1+k)N\log N\bigr),
+\]
+chưa tính chi phí sắp xếp danh sách ứng viên. Nếu số ứng viên là $r$, thao tác sắp xếp có thể tốn:
+\[
+O(r\log r).
+\]
+Trong trường hợp xấu, $r$ có thể cùng bậc với $N$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.34\textwidth}|L{0.24\textwidth}|L{0.32\textwidth}|}
+\hline
+\textbf{Thành phần xử lý} & \textbf{Độ phức tạp khái quát} & \textbf{Ghi chú} \\
+\hline
+Một lần Dijkstra có hướng & $O(N\log N)$ & Với $N$ là số ô hợp lệ và bốn hướng cố định. \\
+\hline
+Thu thập ứng viên chưa bao phủ & $O(N)$ & Duyệt các ô hợp lệ và lấy các ô chưa bao phủ còn tới được. \\
+\hline
+Sắp xếp ứng viên & $O(r\log r)$ & $r$ là số ứng viên được tìm thấy. \\
+\hline
+Kiểm tra $k$ ứng viên sâu & $O(kN\log N)$ & Mỗi ứng viên có thể cần ước lượng đường quay về căn cứ. \\
+\hline
+Lập kế hoạch lại nhiều lần & Phụ thuộc số lần replan & Môi trường động có thể làm tăng số lần gọi Dijkstra. \\
+\hline
+\end{tabular}
+\caption{Độ phức tạp khái quát của các thành phần lập kế hoạch}
+\end{table}
+
+Phân tích trên cho thấy việc chọn Dijkstra có hướng và chiến lược tham lam có ràng buộc là lựa chọn thực dụng. Hệ thống có thể chạy lặp lại nhiều lần trên bản đồ mô phỏng, trong khi vẫn giữ được cơ sở tối ưu cục bộ cho từng lần tìm đường. Nếu thay bằng tối ưu toàn cục trên toàn bộ thứ tự bao phủ, không gian tìm kiếm sẽ lớn hơn nhiều và khó kiểm soát hơn trong phạm vi đồ án.
+
+\section{Giới hạn của phương pháp và khả năng mở rộng}
+
+Phương pháp đề xuất có một số giới hạn cần được nêu rõ. Thứ nhất, môi trường được rời rạc hóa thành bản đồ lưới đã biết trong mô phỏng. Do đó, đồ án chưa giải quyết bài toán đồng thời xây dựng bản đồ và định vị. Thứ hai, robot di chuyển theo bốn hướng chính, chưa xét chuyển động liên tục hoặc động học chi tiết. Thứ ba, chi phí địa hình $c(v)$ là chi phí năng lượng tương đối đã chuẩn hóa, chưa phải mô hình cơ học đất đầy đủ. Thứ tư, vật cản động được xem là tác nhân hợp tác, không đối kháng. Thứ năm, chiến lược chọn mục tiêu là tham lam có ràng buộc, không tối ưu toàn cục cho toàn bộ nhiệm vụ.
+
+Các giới hạn này không làm mất ý nghĩa của đồ án, mà giúp phạm vi nghiên cứu tập trung vào bài toán lập kế hoạch bao phủ có xét năng lượng, chi phí quay và vật cản động. Nhiều thành phần có thể được mở rộng trong cùng khung mô hình. Ví dụ, một căn cứ có thể mở rộng thành nhiều căn cứ; vật cản động một ô có thể mở rộng thành vùng không an toàn; bốn hướng có thể mở rộng thành nhiều hướng; hệ số chi phí quay có thể hiệu chỉnh theo loại robot; và chính sách dự phòng $M(d)$ có thể thay bằng hàm phụ thuộc mức rủi ro môi trường.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{|L{0.30\textwidth}|L{0.30\textwidth}|L{0.30\textwidth}|}
+\hline
+\textbf{Lựa chọn trong đồ án} & \textbf{Ý nghĩa} & \textbf{Khả năng mở rộng} \\
+\hline
+Bản đồ lưới bốn hướng & Giữ mô hình đơn giản và rõ ràng. & Mở rộng tập hướng $H$ hoặc thêm cạnh chéo. \\
+\hline
+Một căn cứ $b$ & Tập trung vào quay về và sạc. & Mở rộng thành tập căn cứ $B$. \\
+\hline
+Chi phí quay $\tau(v)=\frac{1}{2}c(v)$ & Chuẩn hóa chi phí quay 90 độ. & Thay đổi $\kappa_{\text{turn}}$ hoặc hệ số theo loại robot. \\
+\hline
+Vật cản động dạng ô & Dễ cập nhật trạng thái an toàn. & Giãn nở thành vùng không an toàn $O_t$. \\
+\hline
+Greedy có ràng buộc năng lượng & Dễ kiểm soát và phù hợp mô phỏng lặp. & Thay bằng tối ưu toàn cục hoặc chiến lược học nếu mở rộng nghiên cứu. \\
+\hline
+\end{tabular}
+\caption{Các lựa chọn đại diện và khả năng mở rộng của mô hình}
+\end{table}
+
+Như vậy, nhiều lựa chọn trong đồ án không nhằm khẳng định đó là cách duy nhất, mà là các trường hợp đại diện có thể quy đổi hoặc mở rộng. Cách tiếp cận này giúp hệ thống vừa đủ cụ thể để cài đặt và đánh giá, vừa đủ tổng quát để giải thích được nhiều biến thể khác của bài toán.
+
+\section{Kết chương}
+
+Chương này đã phân tích các lựa chọn lý thuyết và thiết kế chính của đồ án. Chi phí địa hình $c(v)$ được hiểu là chi phí năng lượng tương đối đã chuẩn hóa, phù hợp để đưa vào đồ thị có trọng số. Việc mở rộng trạng thái thành $(v,h)$ giúp hệ thống xét được chi phí quay trong quá trình lập kế hoạch. Dijkstra có hướng bảo đảm tìm đường chi phí nhỏ nhất giữa các trạng thái trong mô hình tại thời điểm lập kế hoạch, nhưng không được hiểu là lời giải tối ưu toàn cục cho toàn bộ nhiệm vụ bao phủ.
+
+Chương này cũng đã phân tích chiến lược chọn mục tiêu tham lam có ràng buộc năng lượng, điều kiện quay về căn cứ, vai trò của hàm dự phòng $M(d)$, cơ chế xử lý vật cản động thông qua tập ô an toàn, vai trò đối chứng của Metric H và độ phức tạp tính toán của các thành phần chính. Các phân tích này tạo cơ sở để Chương 5 đánh giá thực nghiệm hành vi của hệ thống trên các bản đồ và cấu hình mô phỏng cụ thể.
+
+\end{document}

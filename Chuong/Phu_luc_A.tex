@@ -1,0 +1,98 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Phụ lục này tổng hợp các kịch bản kiểm thử được sử dụng để đánh giá hệ thống mô phỏng. Các kịch bản được chia theo nhóm để tách riêng từng yếu tố ảnh hưởng như vị trí căn cứ, chi phí quay, năng lượng thấp, mật độ vật cản, vật cản động, địa hình trọng số và kích thước bản đồ.
+
+\section{Nhóm A: thay đổi vị trí căn cứ}
+
+Nhóm A sử dụng cùng một bản đồ chính kích thước 35x30 với 924 ô hợp lệ. Mục tiêu là quan sát ảnh hưởng của vị trí căn cứ tới số bước, năng lượng tiêu thụ, số bước đi lại, số lần quay về và số lần sạc.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|L{0.18\textwidth}|C{0.16\textwidth}|C{0.14\textwidth}|L{0.42\textwidth}|}
+\hline
+\textbf{Mã kịch bản} & \textbf{Căn cứ} & \textbf{Bản đồ} & \textbf{Mục tiêu kiểm tra} \\
+\hline
+A01 base center & (18,15) & 35x30 & Trường hợp căn cứ gần trung tâm, dùng làm mốc so sánh chính. \\
+\hline
+A10 base off-center & (12,10) & 35x30 & Căn cứ lệch nhẹ khỏi trung tâm để kiểm tra mức tăng chi phí quay về. \\
+\hline
+A09 base E-center & (18,30) & 35x30 & Căn cứ đặt gần biên phía Đông, kiểm tra ảnh hưởng của lệch theo một trục. \\
+\hline
+A02 base NW & (1,1) & 35x30 & Căn cứ ở góc Tây Bắc, kiểm tra trường hợp khoảng cách quay về lớn. \\
+\hline
+A05 base SE & (35,30) & 35x30 & Căn cứ ở góc Đông Nam, so sánh với trường hợp góc khác để thấy ảnh hưởng của cấu trúc vật cản. \\
+\hline
+\end{tabular}
+\caption{Danh mục kịch bản nhóm A}
+\end{table}
+
+\section{Nhóm H: đối chứng Metric H}
+
+Nhóm H dùng cùng bản đồ với A01 nhưng thay đổi giả định về chi phí quay. Cấu hình mặc định xem quay 90 độ tại một ô có chi phí bằng một nửa chi phí đi qua ô đó, trong khi Metric H xem chi phí quay là 0.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|L{0.20\textwidth}|L{0.24\textwidth}|L{0.46\textwidth}|}
+\hline
+\textbf{Mã kịch bản} & \textbf{Cấu hình} & \textbf{Mục tiêu kiểm tra} \\
+\hline
+A01 base center & Chi phí quay mặc định & Làm mốc so sánh cho robot có hướng thân rõ ràng như robot vi sai, skid-steer hoặc bánh xích. \\
+\hline
+H01 A01 base center & Metric H & Kiểm tra trường hợp chi phí quay được xem là không đáng kể, đại diện cho robot toàn hướng hoặc giả định đối chứng. \\
+\hline
+\end{tabular}
+\caption{Danh mục kịch bản nhóm H}
+\end{table}
+
+\section{Các nhóm kịch bản vận hành khó}
+
+Các nhóm B, C và D được dùng để kiểm tra khả năng kết thúc nhiệm vụ có kiểm soát khi hệ thống không thể hoặc không nên tiếp tục bao phủ tới 100\% trong điều kiện hiện tại.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|C{0.10\textwidth}|L{0.20\textwidth}|L{0.24\textwidth}|L{0.36\textwidth}|}
+\hline
+\textbf{Nhóm} & \textbf{Mã kịch bản} & \textbf{Đặc điểm chính} & \textbf{Mục tiêu kiểm tra} \\
+\hline
+B & B09 energy 050 & Dung lượng pin tối đa thấp & Kiểm tra việc robot không tiếp tục đi sâu khi không còn đủ năng lượng để vừa bao phủ vừa quay về. \\
+\hline
+C & C09 density 35 & Mật độ vật cản cao, vùng khó tiếp cận & Kiểm tra giới hạn của chiến lược chọn mục tiêu tham lam có ràng buộc trong bản đồ phức tạp. \\
+\hline
+D & D14 dynamic return & Vật cản động ảnh hưởng đường quay về & Kiểm tra phản ứng khi đường quay về bị chặn kéo dài và hệ thống phải chuyển sang trạng thái bảo toàn. \\
+\hline
+\end{tabular}
+\caption{Danh mục kịch bản vận hành khó}
+\end{table}
+
+\section{Nhóm E và F: địa hình trọng số và bản đồ lớn hơn}
+
+Hai nhóm E và F được dùng để kiểm tra thêm hai yếu tố: chi phí địa hình biến thiên và khả năng duy trì quy trình nhiệm vụ trên bản đồ có kích thước lớn hơn nhóm A.
+
+\begin{table}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{|C{0.10\textwidth}|L{0.20\textwidth}|C{0.16\textwidth}|L{0.44\textwidth}|}
+\hline
+\textbf{Nhóm} & \textbf{Mã kịch bản} & \textbf{Quy mô} & \textbf{Mục tiêu kiểm tra} \\
+\hline
+E & E07 gradient & 30x35, 1050 ô hợp lệ & Kiểm tra tác động của bản đồ có chi phí địa hình biến thiên tới tổng năng lượng. \\
+\hline
+F & F05 scale & 35x40, 1120 ô hợp lệ & Kiểm tra việc duy trì quy trình bao phủ, quay về căn cứ và sạc lại trên bản đồ lớn hơn. \\
+\hline
+\end{tabular}
+\caption{Danh mục kịch bản nhóm E và F}
+\end{table}
+
+\end{document}

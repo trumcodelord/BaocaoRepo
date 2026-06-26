@@ -1,0 +1,264 @@
+\RequirePackage{fix-cm}
+\documentclass[a4paper,twoside]{report}
+\usepackage{scrextend}
+\changefontsizes{13pt}
+\usepackage[utf8]{vietnam}
+\usepackage[top=2cm, bottom=2cm, left=3.5cm, right=2.5cm]{geometry}
+\usepackage{xurl}
+\usepackage{appendix}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{outlines}
+\usepackage{graphicx}
+\usepackage{fancybox}
+\usepackage{indentfirst}
+\usepackage{amsthm}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsbsy}
+\usepackage{times}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\usepackage{enumitem}
+\usepackage{subfiles}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{chngcntr}
+\usepackage{pdflscape}
+\usepackage{afterpage}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{capt-of}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage[font=small,labelfont=bf]{caption}
+\addto\captionsenglish{%
+\renewcommand{\chaptername}{CHƯƠNG}%
+\renewcommand{\tablename}{Bảng}%
+\renewcommand{\listtablename}{Danh sách bảng}%
+}
+\renewcommand{\chaptername}{CHƯƠNG}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\listtablename}{Danh sách bảng}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[nonumberlist, nopostdot, nogroupskip, acronym]{glossaries}
+\usepackage{glossary-superragged}
+\setglossarystyle{superraggedheaderborder}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{tocbasic}
+\usepackage{blindtext}
+\renewcommand{\bibname}{Danh_sach_tai_lieu_tham_khao}
+\usepackage{silence}
+\WarningFilter{biblatex}{Macro 'volume+number' undefined}
+\WarningFilter{biblatex}{'babel/polyglossia' detected but 'csquotes' missing}
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{Danh_sach_tai_lieu_tham_khao.bib}
+\input{Tu_viet_tat}
+
+\renewcommand{\chaptermark}[1]{\markboth{CHƯƠNG \thechapter.\ #1}{}}
+\fancypagestyle{plain}{%
+\fancyhf{}
+\fancyfoot[RO,RE]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}}
+\setlength{\headheight}{18pt}
+
+\def \TITLE{ĐỒ ÁN TỐT NGHIỆP}
+\def \AUTHOR{Hà Kim Minh}
+
+\titleformat{\chapter}[hang]{\centering\bfseries}{CHƯƠNG \thechapter.\ }{0pt}{}[]
+\titleformat
+    {\chapter}
+    [hang]
+    {\centering\bfseries}
+    {CHƯƠNG \thechapter.\ }
+    {0pt}
+    {}
+    []
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+\titleformat
+    {\section}
+    [hang]
+    {\bfseries}
+    {\thechapter.\arabic{section}\ \ \ \ }
+    {0pt}
+    {}
+    []
+\titlespacing{\section}{0pt}{\parskip}{0.5\parskip}
+\titleformat
+    {\subsection}
+    [hang]
+    {\bfseries}
+    {\thechapter.\arabic{section}.\arabic{subsection}\ \ \ \ }
+    {0pt}
+    {}
+    []
+\titlespacing{\subsection}{30pt}{\parskip}{0.5\parskip}
+\renewcommand\thesubsubsection{\alph{subsubsection}}
+\titleformat
+    {\subsubsection}
+    [hang]
+    {\bfseries}
+    {\alph{subsubsection}, \ }
+    {0pt}
+    {}
+    []
+\titlespacing{\subsubsection}{50pt}{\parskip}{0.5\parskip}
+
+\usepackage{hyperref}
+\hypersetup{pdfborder = {0 0 0}}
+\hypersetup{pdftitle={\TITLE}, pdfauthor={\AUTHOR}}
+\usepackage[all]{hypcap}
+\graphicspath{{figures/}{../figures/}}
+\counterwithin{figure}{chapter}
+\title{\bf \TITLE}
+\author{\AUTHOR}
+\setcounter{secnumdepth}{3}
+\theoremstyle{definition}
+\newtheorem{example}{Ví dụ}[chapter]
+\onehalfspacing
+\raggedbottom
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{15pt}
+
+\begin{document}
+\subfile{Bia}
+\subfile{Bia_lot}
+
+\pagestyle{empty}
+\newpage
+\pagenumbering{gobble}
+\subfile{Chuong/0_2_Loi_cam_on.tex}
+
+\newpage
+\pagenumbering{gobble}
+\subfile{Chuong/0_3_Tom_tat_noi_dung.tex}
+
+\newpage
+\pagenumbering{gobble}
+\subfile{Chuong/0_4_Tom_tat_noi_dung_eng.tex}
+
+\newpage
+\pagenumbering{gobble}
+\renewcommand*\contentsname{MỤC LỤC}
+\titlecontents{chapter}
+    [0.0cm]
+    {\bfseries\vspace{0.3cm}}
+    {{\bfseries{\scshape} CHƯƠNG \thecontentslabel.\ }}
+    {}
+    {\titlerule*[0.3pc]{.}\contentspage}
+\titlecontents{section}
+    [0.0cm]
+    {\vspace{0.3cm}}
+    {\thecontentslabel \ }
+    {}
+    {\titlerule*[0.3pc]{.}\contentspage}
+\titlecontents{subsection}
+    [1.0cm]
+    {\vspace{0.3cm}}
+    {\thecontentslabel \ }
+    {}
+    {\titlerule*[0.3pc]{.}\contentspage}
+\addtocontents{toc}{\protect\thispagestyle{empty}}
+\tableofcontents
+\thispagestyle{empty}
+\cleardoublepage
+
+\pagenumbering{roman}
+\renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
+{\let\oldnumberline\numberline
+\renewcommand{\numberline}{Hình~\oldnumberline}
+\listoffigures}
+\newpage
+
+\renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
+{\let\oldnumberline\numberline
+\renewcommand{\numberline}{Bảng~\oldnumberline}
+\listoftables}
+
+\glsaddall
+\phantomsection
+\chapter*{DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
+\addcontentsline{toc}{chapter}{DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
+\begingroup
+\setglossarystyle{list}
+\renewcommand*{\glossarysection}[2][]{}
+\printnoidxglossary[type=\acronymtype,title={}]
+\endgroup
+
+\renewcommand\appendixname{PHỤ LỤC}
+\renewcommand\appendixpagename{PHỤ LỤC}
+\renewcommand\appendixtocname{PHỤ LỤC}
+
+\newpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[RE, LO]{\leftmark}
+\fancyfoot[RE, LO]{\thepage}
+
+\chapter{GIỚI THIỆU ĐỀ TÀI}
+\subfile{Chuong/1_Gioi_thieu}
+
+\newpage
+\chapter{NỀN TẢNG LÝ THUYẾT}
+\subfile{Chuong/2_Co_so_ly_thuyet}
+
+\newpage
+\chapter{PHƯƠNG PHÁP ĐỀ XUẤT}
+\subfile{Chuong/3_De_xuat}
+
+\newpage
+\chapter{PHÂN TÍCH LÝ THUYẾT}
+\subfile{Chuong/4_Phan_tich_ly_thuyet}
+
+\newpage
+\chapter{ĐÁNH GIÁ THỰC NGHIỆM}
+\subfile{Chuong/5_Thuc_nghiem}
+
+\newpage
+\chapter{KẾT LUẬN}
+\subfile{Chuong/6_Ket_luan}
+
+\newpage
+\chapter*{MỘT SỐ LƯU Ý VỀ TÀI LIỆU THAM KHẢO}
+\label{chapter:reference}
+\subfile{Chuong/7_Tai_lieu_tham_khao}
+
+\newpage
+\renewcommand\bibname{TÀI LIỆU THAM KHẢO}
+\printbibliography
+\phantomsection\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+
+\appendixpage
+\appendix
+\addappheadtotoc
+\titleformat{\chapter}[hang]{\centering\bfseries}{ \thechapter.\ }{0pt}{}[]
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+\titlecontents{chapter}
+    [0.0cm]
+    {\bfseries\vspace{0.3cm}}
+    {{\bfseries{\scshape} \thecontentslabel.\ }}
+    {}
+    {\titlerule*[0.3pc]{.}\contentspage}
+
+\chapter{DANH MỤC KỊCH BẢN KIỂM THỬ}
+\subfile{Chuong/Phu_luc_A}
+
+\newpage
+\chapter{BẢNG TỔNG HỢP KẾT QUẢ THỰC NGHIỆM}
+\subfile{Chuong/Phu_luc_B}
+
+\newpage
+\chapter{GHI CHÚ PHÁT TRIỂN VÀ PHÂN TÍCH LOG}
+\subfile{Chuong/Phu_luc_C}
+
+\end{document}
