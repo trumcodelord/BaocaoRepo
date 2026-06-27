@@ -1,9 +1,6 @@
 name: One-time terminology fix
 
-on:
-  push:
-    paths:
-      - '.github/workflows/terminology-fix.yml'
+on: [push]
 
 permissions:
   contents: write
