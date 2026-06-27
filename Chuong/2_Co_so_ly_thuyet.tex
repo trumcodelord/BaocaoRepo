@@ -13,9 +13,9 @@ Bài toán bao phủ trong đồ án không chỉ xét số lượng ô đã đi
 
 \section{Giả thiết mô hình và hệ ký hiệu}
 
-Để tập trung vào bài toán lập kế hoạch và đánh giá thuật toán, đồ án sử dụng một số giả thiết mô hình. Thứ nhất, môi trường được biểu diễn bằng bản đồ lưới hai chiều đã biết trong phạm vi mô phỏng. Thứ hai, robot di chuyển giữa các ô kề cạnh theo bốn hướng chính. Thứ ba, một ô được xem là đã bao phủ khi robot đi qua ô đó trong mô hình. Thứ tư, đồ án không mô phỏng trực tiếp cảm biến dò mìn, sai số định vị, sai số điều khiển hoặc động lực học chi tiết của robot ngoài thực địa. Thứ năm, vật cản động trong môi trường là các tác nhân chuyển động hợp tác, không phải đối tượng đối kháng.
+Để tập trung vào bài toán lập kế hoạch và đánh giá thuật toán, đồ án sử dụng một số giả thiết mô hình. Thứ nhất, môi trường được biểu diễn bằng bản đồ lưới hai chiều đã biết trong phạm vi mô phỏng. Thứ hai, robot di chuyển giữa các ô kề cạnh theo bốn hướng chính. Thứ ba, một ô được xem là đã bao phủ khi robot đi qua ô đó trong mô hình. Thứ tư, vật cản động trong môi trường là các tác nhân chuyển động hợp tác, không phải đối tượng đối kháng.
 
-Các giả thiết này xác định phạm vi của đồ án: đồ án nghiên cứu bài toán lập kế hoạch bao phủ trên bản đồ lưới, chưa xử lý cảm biến dò mìn và điều khiển robot ngoài thực địa. Trong phạm vi đó, mô hình đủ để khảo sát tác động của địa hình có trọng số, chi phí quay, giới hạn năng lượng, cơ chế quay về căn cứ và vật cản động tới hành vi bao phủ của robot.
+Các giả thiết này xác định rõ phạm vi nghiên cứu của đồ án. Đề tài được thực hiện theo hướng Khoa học máy tính, tập trung vào mô hình hóa bài toán, thiết kế thuật toán lập kế hoạch bao phủ và đánh giá hành vi của robot trong môi trường mô phỏng. Vì vậy, đồ án không đi sâu vào thiết kế cơ khí, cảm biến dò mìn, mạch điều khiển hay triển khai robot ngoài thực địa. Trong phạm vi thuật toán, mô hình lưới có trọng số, chi phí quay, giới hạn năng lượng, cơ chế quay về căn cứ và vật cản động là đủ để khảo sát các quyết định lập kế hoạch chính của hệ thống.
 
 Các ký hiệu chính được sử dụng trong chương này được trình bày trong Bảng 2.1.
 
@@ -113,7 +113,7 @@ Trong đó $|C_t|$ là số ô đã được bao phủ và $|V_{\text{free}}|$ l
 
 Trong thực nghiệm mô phỏng, tỷ lệ bao phủ là một chỉ số quan trọng để đánh giá mức độ hoàn thành nhiệm vụ. Tuy nhiên, chỉ số này không nên được xem xét riêng lẻ. Một robot có thể đạt tỷ lệ bao phủ cao nhưng tiêu tốn quá nhiều năng lượng, đi lại nhiều lần hoặc không quay về được căn cứ. Vì vậy, trạng thái thành công của nhiệm vụ trong đồ án cần được đánh giá cùng với các yếu tố khác như năng lượng còn lại, số lần quay về sạc, số bước di chuyển, số bước đi lại và trạng thái kết thúc tại căn cứ.
 
-Với định hướng robot dò mìn hoặc rà soát vật nguy hiểm, việc bao phủ toàn bộ vùng hợp lệ giúp giảm nguy cơ bỏ sót vùng cần kiểm tra. Tuy nhiên, mô hình trong đồ án vẫn là mô hình mô phỏng thuật toán, chưa bao gồm mô hình cảm biến dò mìn thực tế. Do đó, một ô được bao phủ trong đồ án nên được hiểu là ô đã được robot xử lý trong phạm vi mô phỏng, không đồng nhất với kết luận rằng vùng ngoài thực địa đã được xác minh an toàn tuyệt đối.
+Với định hướng robot dò mìn hoặc rà soát vật nguy hiểm, việc bao phủ toàn bộ vùng hợp lệ giúp giảm nguy cơ bỏ sót vùng cần kiểm tra. Trong phạm vi đồ án, một ô được bao phủ được hiểu là ô đã được robot xử lý trong mô hình mô phỏng thuật toán. Kết luận này phục vụ đánh giá chiến lược lập kế hoạch, không được đồng nhất với kết luận ngoài thực địa rằng vùng đó đã được cảm biến dò mìn xác minh an toàn tuyệt đối.
 
 \section{Thuật toán Dijkstra trên đồ thị có trọng số}
 
@@ -297,9 +297,9 @@ Với góc quay 180 độ, tức là $\theta=\pi$, năng lượng quay là:
 \[
 E_{\text{turn}} = \kappa_{\text{turn}}c(v).
 \]
-Trong trường hợp mô phỏng chọn $\kappa_{\text{turn}}=1$, quay 90 độ tại ô $v$ tiêu tốn $\frac{1}{2}c(v)$ và quay 180 độ tiêu tốn $c(v)$. Đây là lựa chọn chuẩn hóa để đưa chi phí quay về cùng thang đo với chi phí di chuyển trên bản đồ lưới. Mô hình này chưa mô tả đầy đủ mọi tương tác bánh xe--mặt đất, nhưng đủ cho mục tiêu của đồ án: đưa chi phí đổi hướng vào quá trình lập kế hoạch.
+Trong trường hợp mô phỏng chọn $\kappa_{\text{turn}}=1$, quay 90 độ tại ô $v$ tiêu tốn $\frac{1}{2}c(v)$ và quay 180 độ tiêu tốn $c(v)$. Đây là lựa chọn chuẩn hóa để đưa chi phí quay về cùng thang đo với chi phí di chuyển trên bản đồ lưới. Mô hình không đi sâu vào mọi tương tác bánh xe--mặt đất, nhưng đáp ứng đúng mục tiêu của đồ án: đưa chi phí đổi hướng vào quá trình lập kế hoạch.
 
-Việc chọn $L=2s/\pi$ không có nghĩa đây là kích thước vật lý duy nhất của robot. Lựa chọn này chủ yếu đóng vai trò chuẩn hóa để thao tác quay 90 độ có chi phí bằng một nửa chi phí di chuyển qua một ô trên cùng loại địa hình. Tổng quát hơn, từ công thức $E_{\text{turn}}(\theta,v)=\kappa_{\text{turn}}c(v)L|\theta|/(2s)$ có thể thấy chi phí quay tỉ lệ thuận với tỉ lệ $L/s$. Nếu robot thực tế có tỉ lệ $L/s$ khác, mô hình vẫn giữ nguyên dạng và chỉ cần điều chỉnh hệ số tỉ lệ hình học. Do đó, lựa chọn $L=2s/\pi$ là một chuẩn hóa thuận tiện, không làm mất khả năng biểu diễn các mức chi phí quay khác trong cùng một khung mô hình.
+Việc chọn $L=2s/\pi$ không có nghĩa đây là kích thước vật lý duy nhất của robot. Lựa chọn này chủ yếu đóng vai trò chuẩn hóa để thao tác quay 90 độ có chi phí bằng một nửa chi phí di chuyển qua một ô trên cùng loại địa hình. Tổng quát hơn, từ công thức $E_{\text{turn}}(\theta,v)=\kappa_{\text{turn}}c(v)L|\theta|/(2s)$ có thể thấy chi phí quay tỉ lệ thuận với tỉ lệ $L/s$. Nếu robot thực tế có tỉ lệ $L/s$ khác, mô hình vẫn giữ nguyên dạng và chỉ cần điều chỉnh hệ số tỉ lệ hình học hoặc hấp thụ khác biệt đó vào $\kappa_{\text{turn}}$. Do đó, lựa chọn $L=2s/\pi$ là một chuẩn hóa thuận tiện, không làm mất khả năng biểu diễn các mức chi phí quay khác trong cùng một khung mô hình.
 
 Với một đường đi có hướng:
 \[
@@ -323,7 +323,7 @@ E_{\text{rem}}\ge E(P_{v\rightarrow g}) + E(P_{g\rightarrow b}) + E_{\text{safe}
 \]
 Trong phạm vi đồ án, điều kiện quay về căn cứ đóng vai trò ràng buộc quan trọng để hạn chế việc robot đi quá xa trong khi năng lượng còn lại không đủ cho quá trình quay về. Nếu điều kiện này không được xét, robot có thể đạt lợi ích bao phủ trước mắt nhưng làm giảm khả năng duy trì nhiệm vụ trong các bước tiếp theo.
 
-Lượng dự phòng an toàn có thể được thiết kế theo nhiều cách khác nhau: một hằng số cố định, một tỷ lệ theo dung lượng pin, một hàm tăng theo độ dài đường quay về hoặc một hàm phụ thuộc vào mức độ rủi ro của môi trường. Về mặt mô hình, các lựa chọn này đều có thể được quy về một hàm dự phòng $M(d)$ phụ thuộc vào chi phí hoặc mức rủi ro của đường quay về. Do đó, khi chuyển sang triển khai ở Chương 3, đồ án sử dụng một dạng cụ thể của $M(d)$ để vừa giữ được ý nghĩa an toàn, vừa bảo đảm mô phỏng dễ kiểm soát.
+Lượng dự phòng an toàn có thể được thiết kế theo nhiều cách khác nhau: một hằng số cố định, một tỷ lệ theo dung lượng pin, một hàm tăng theo độ dài đường quay về hoặc một hàm phụ thuộc vào mức độ rủi ro của môi trường. Về mặt mô hình, các lựa chọn này đều có thể được quy về một hàm dự phòng $M(d)$ phụ thuộc vào chi phí hoặc mức rủi ro của đường quay về. Trong đồ án, hàm dự phòng được áp dụng theo loại môi trường: với bản đồ tĩnh không có vật cản động, robot chỉ cần đủ năng lượng để đi tới mục tiêu và quay về căn cứ; với kịch bản có vật cản động, hệ thống giữ thêm quỹ dự phòng để xử lý khả năng đường về phát sinh chi phí do chờ, đi vòng hoặc lập kế hoạch lại.
 
 Cơ chế quay về căn cứ cũng giúp chia nhiệm vụ bao phủ thành các chu kỳ làm việc. Robot rời căn cứ, bao phủ một phần bản đồ, sau đó quay về để sạc hoặc kết thúc một lượt làm việc. Sau khi được nạp lại năng lượng, robot có thể tiếp tục xử lý các vùng chưa bao phủ. Cách tổ chức này phù hợp với các nhiệm vụ dài, trong đó việc hoàn thành toàn bộ bản đồ trong một lần di chuyển là giả định không thực tế.
 

@@ -29,7 +29,7 @@ Luồng xử lý tổng quát của hệ thống gồm các bước chính sau:
 \hline
 4 & Lập kế hoạch & Nếu robot chưa có đường đi hiện tại, hệ thống chọn mục tiêu bao phủ và tìm đường bằng Dijkstra có hướng. \\
 \hline
-5 & Kiểm tra năng lượng & Robot chỉ chọn mục tiêu nếu năng lượng còn lại đủ để đi tới mục tiêu, quay về căn cứ và giữ phần dự phòng. \\
+5 & Kiểm tra năng lượng & Robot chỉ chọn mục tiêu nếu năng lượng còn lại đủ để đi tới mục tiêu, quay về căn cứ và giữ phần dự phòng khi kịch bản có vật cản động. \\
 \hline
 6 & Thực thi chuyển động & Nếu ô tiếp theo an toàn, robot thực hiện quay, di chuyển, tiêu hao năng lượng và cập nhật ô đã bao phủ. \\
 \hline
@@ -41,7 +41,7 @@ Luồng xử lý tổng quát của hệ thống gồm các bước chính sau:
 \caption{Quy trình tổng quát của hệ thống mô phỏng}
 \end{table}
 
-Hệ thống hoạt động theo vòng lặp nhiệm vụ. Ở mỗi bước, robot không chỉ chọn mục tiêu gần nhất, mà còn xét chi phí đường đi, năng lượng còn lại, đường quay về căn cứ và trạng thái an toàn của môi trường. Nhờ đó, chương trình mô phỏng được các ràng buộc chính của một nhiệm vụ dài: phải bao phủ thêm ô mới, nhưng vẫn giữ khả năng quay về và xử lý vật cản động.
+Hệ thống hoạt động theo vòng lặp nhiệm vụ. Ở mỗi bước, robot không chỉ chọn mục tiêu gần nhất, mà còn xét chi phí đường đi, năng lượng còn lại, đường quay về căn cứ và trạng thái an toàn của môi trường. Với kịch bản tĩnh, robot chỉ cần đủ năng lượng để đi tới mục tiêu và quay về căn cứ. Với kịch bản có vật cản động, hệ thống giữ thêm quỹ dự phòng quay về vì đường về có thể phát sinh chi phí do chờ, đi vòng hoặc lập kế hoạch lại. Nhờ đó, chương trình mô phỏng được các ràng buộc chính của một nhiệm vụ dài: phải bao phủ thêm ô mới, nhưng vẫn bảo toàn khả năng quay về và xử lý vật cản động.
 
 Các thành phần chính của hệ thống được tóm tắt trong Bảng 3.1.
 
@@ -62,7 +62,7 @@ Bộ lập kế hoạch & Tìm đường đi chi phí nhỏ nhất bằng Dijkst
 \hline
 Bộ chọn mục tiêu & Chọn ô chưa bao phủ có thể đi tới và vẫn bảo đảm khả năng quay về căn cứ theo ràng buộc năng lượng. \\
 \hline
-Bộ xử lý năng lượng & Tính năng lượng di chuyển, năng lượng quay, năng lượng dự phòng và điều kiện quay về căn cứ. \\
+Bộ xử lý năng lượng & Tính năng lượng di chuyển, năng lượng quay, dự phòng quay về có điều kiện và điều kiện quay về căn cứ. \\
 \hline
 Bộ xử lý vật cản động & Cập nhật các ô tạm thời không an toàn, phát hiện đường bị chặn và kích hoạt chờ hoặc lập kế hoạch lại. \\
 \hline
@@ -323,7 +323,15 @@ Hệ thống sắp xếp các ứng viên theo chi phí đi tới mục tiêu. S
 \[
 E_t \ge d_{\text{to}}(g)+d_{\text{return}}(g)+M(d_{\text{return}}(g)).
 \]
-Trong mô phỏng, $M(d)$ được chọn theo nguyên tắc có một mức dự phòng tối thiểu và có thể tăng theo độ dài đường quay về. Cụ thể, hệ thống sử dụng mức dự phòng tối thiểu 15 đơn vị năng lượng và một thành phần tỷ lệ với chi phí quay về. Khi đường quay về dài hơn, robot cần thận trọng hơn vì khả năng gặp vật cản động hoặc phải lập kế hoạch lại cũng tăng lên.
+Trong phiên bản hiện tại, $M(d)$ được áp dụng theo loại kịch bản:
+\[
+M(d)=
+\begin{cases}
+0, & \text{khi kịch bản không có vật cản động},\\
+\max\left(M_{\min},M_{\text{prop}}(d)\right), & \text{khi kịch bản có vật cản động}.
+\end{cases}
+\]
+Cách tách này phản ánh đúng vai trò của quỹ dự phòng. Với bản đồ tĩnh, đường quay về được đánh giá trên bản đồ đã biết nên robot chỉ cần đủ năng lượng cho chặng đi tới mục tiêu và chặng quay về căn cứ. Với kịch bản có vật cản động, hệ thống giữ thêm dự phòng vì đường về có thể phát sinh chi phí do chờ, đi vòng hoặc lập kế hoạch lại.
 
 Pseudo-code của bước chọn mục tiêu có thể viết như sau:
 
@@ -354,7 +362,7 @@ Pseudo-code của bước chọn mục tiêu có thể viết như sau:
 \caption{Quy trình lựa chọn mục tiêu bao phủ}
 \end{table}
 
-Điểm quan trọng của chiến lược này là robot không chọn mục tiêu chỉ vì mục tiêu đó gần nhất theo số bước. Mục tiêu được chọn phải đồng thời thỏa mãn ba điều kiện: có đường đi tới, có đường quay về và đủ năng lượng cho cả hai chặng kèm dự phòng. Cách chọn này giúp hạn chế tình huống robot đạt thêm một phần bao phủ trước mắt nhưng làm suy giảm khả năng quay về căn cứ.
+Điểm quan trọng của chiến lược này là robot không chọn mục tiêu chỉ vì mục tiêu đó gần nhất theo số bước. Mục tiêu được chọn phải đồng thời thỏa mãn ba điều kiện: có đường đi tới, có đường quay về và đủ năng lượng theo chính sách dự phòng của kịch bản. Cách chọn này giúp hạn chế tình huống robot đạt thêm một phần bao phủ trước mắt nhưng làm suy giảm khả năng quay về căn cứ.
 
 Chiến lược trên thuộc nhóm chọn mục tiêu tham lam có ràng buộc. Hệ thống không tìm toàn bộ thứ tự bao phủ tối ưu cho cả nhiệm vụ, mà chọn mục tiêu khả thi tốt nhất tại thời điểm lập kế hoạch hiện tại. Cách làm này giữ quá trình mô phỏng đơn giản, kiểm tra được bằng log và đủ để đánh giá tác động của chi phí quay, trọng số địa hình, năng lượng và vật cản động.
 
@@ -366,21 +374,25 @@ Tại vị trí hiện tại $v_t$, hệ thống ước lượng chi phí quay v
 \[
 d_b = E(P_{v_t\rightarrow b}).
 \]
-Robot được yêu cầu quay về nếu năng lượng còn lại nhỏ hơn hoặc bằng chi phí quay về cộng với năng lượng dự phòng:
+Robot được yêu cầu quay về nếu năng lượng còn lại nhỏ hơn hoặc bằng chi phí quay về cộng với năng lượng dự phòng của kịch bản:
 \[
 E_t \le d_b + M(d_b).
 \]
-Trong hệ thống, mức dự phòng được tính theo công thức khái quát:
+Trong hệ thống, hàm dự phòng được tính như sau:
 \[
-M(d_b)=\max\left(M_{\min},\ M_{\text{prop}}(d_b)\right),
+M(d_b)=
+\begin{cases}
+0, & \text{khi kịch bản không có vật cản động},\\
+\max\left(M_{\min},\ M_{\text{prop}}(d_b)\right), & \text{khi kịch bản có vật cản động}.
+\end{cases}
 \]
-trong đó $M_{\min}$ là dự phòng tối thiểu và $M_{\text{prop}}(d_b)$ là thành phần dự phòng tăng theo chi phí quay về. Với cấu hình hiện tại, $M_{\min}=15$ và thành phần tỷ lệ được lấy xấp xỉ bằng $25\%$ chi phí quay về, tức:
+Trong nhánh có vật cản động, $M_{\min}$ là dự phòng tối thiểu và $M_{\text{prop}}(d_b)$ là thành phần dự phòng tăng theo chi phí quay về. Với cấu hình hiện tại, $M_{\min}=15$ và thành phần tỷ lệ được lấy xấp xỉ bằng $25\%$ chi phí quay về, tức:
 \[
 M_{\text{prop}}(d_b)\approx \frac{d_b}{4}.
 \]
 Giá trị này được lượng tử hóa theo bước $0.5$ để thống nhất với cách hệ thống ghi nhận năng lượng.
 
-Công thức dự phòng này là một chính sách cụ thể của hệ thống, không phải lựa chọn duy nhất có thể có. Các chính sách khác như dự phòng cố định, dự phòng theo phần trăm pin hoặc dự phòng theo mức rủi ro môi trường đều có thể được quy về một hàm $M(d)$. Trong phạm vi triển khai hiện tại, dạng $\max(M_{\min},M_{\text{prop}})$ được chọn vì dễ kiểm soát và phản ánh trực giác rằng đường quay về càng dài thì robot càng nên giữ mức dự phòng lớn hơn.
+Công thức dự phòng này là một chính sách cụ thể của hệ thống, không phải lựa chọn duy nhất có thể có. Điểm chính của phiên bản hiện tại là dự phòng không được áp dụng máy móc cho mọi bản đồ. Nếu kịch bản không có vật cản động, việc giữ thêm $25\%$ năng lượng cho một rủi ro không tồn tại sẽ làm chính sách trở nên quá bảo thủ. Nếu kịch bản có vật cản động, quỹ dự phòng giúp robot còn dư địa năng lượng khi đường về phát sinh chi phí do chờ, đi vòng hoặc lập kế hoạch lại.
 
 Robot rơi vào vùng năng lượng tới hạn nếu:
 \[
@@ -392,7 +404,7 @@ E_t \le E_{\min}.
 \]
 Trong cấu hình hiện tại, $E_{\min}=3$. Khi rơi vào vùng năng lượng tới hạn, robot không tiếp tục bao phủ như bình thường mà chuyển sang các cơ chế ứng phó thận trọng hơn như chờ, tìm đường vòng, quay về nếu có thể, hoặc bảo toàn trạng thái nhiệm vụ.
 
-Khi robot về tới căn cứ, nếu nhiệm vụ chưa hoàn thành, robot chuyển sang trạng thái sạc. Sau khi sạc đầy, robot quay lại trạng thái bao phủ bình thường và tiếp tục xử lý các ô chưa bao phủ. Nếu toàn bộ bản đồ đã được bao phủ và robot đã ở căn cứ, nhiệm vụ được xem là hoàn thành đầy đủ.
+Khi robot về tới căn cứ, nếu nhiệm vụ chưa hoàn thành, robot chuyển sang trạng thái sạc. Sau khi sạc đầy, robot quay lại trạng thái bao phủ bình thường và tiếp tục xử lý các ô chưa bao phủ. Nếu toàn bộ bản đồ đã được bao phủ và robot đã ở căn cứ, nhiệm vụ được xem là hoàn thành đầy đủ. Trường hợp robot vừa về tới căn cứ với năng lượng còn lại bằng 0 vẫn được xem là quay về thành công, vì robot đã tới điểm sạc hoặc điểm kết thúc nhiệm vụ.
 
 \section{Mô hình vật cản động và xử lý an toàn}
 
@@ -500,7 +512,7 @@ HOLD\_SAFE \rightarrow RETURN\_TO\_BASE
 \]
 khi chờ quá lâu mà chưa khôi phục được đường bao phủ phù hợp.
 
-Những chuyển trạng thái này là chính sách nhiệm vụ của chương trình mô phỏng, chưa phải bộ điều khiển robot thực địa đầy đủ. Vai trò của chúng là làm cho robot có hành vi nhất quán khi gặp các ràng buộc về năng lượng, vật cản động và điều kiện quay về.
+Những chuyển trạng thái này là chính sách nhiệm vụ của chương trình mô phỏng. Chúng không đóng vai trò bộ điều khiển phần cứng ngoài thực địa, mà tập trung vào lớp quyết định thuật toán: robot phải có hành vi nhất quán khi gặp các ràng buộc về năng lượng, vật cản động và điều kiện quay về.
 
 \section{Ghi log, thống kê và trực quan hóa}
 
@@ -547,6 +559,6 @@ Bên cạnh dữ liệu số, hệ thống sử dụng OpenCV để trực quan 
 
 Chương này đã trình bày phương pháp đề xuất và thiết kế hệ thống mô phỏng robot bao phủ bản đồ lưới có trọng số. Hệ thống sử dụng bản đồ đầu vào gồm chi phí địa hình, vật cản tĩnh, vật cản động và căn cứ. Robot được mô hình hóa bằng trạng thái gồm vị trí, hướng, năng lượng, đường đi hiện tại và trạng thái nhiệm vụ. Bộ lập kế hoạch sử dụng Dijkstra có hướng để tìm đường theo chi phí kết hợp giữa năng lượng di chuyển và năng lượng quay.
 
-Chương này cũng đã mô tả chiến lược chọn mục tiêu bao phủ có xét điều kiện quay về căn cứ, chính sách năng lượng dự phòng, cơ chế sạc, xử lý vật cản động, vòng lặp mô phỏng, các trạng thái nhiệm vụ và hệ thống ghi log, thống kê. Các thành phần này tạo thành một hệ thống mô phỏng hoàn chỉnh, có khả năng chạy thử, quan sát và thu thập dữ liệu để đánh giá. Trên cơ sở đó, Chương 4 sẽ phân tích sâu hơn các đặc điểm lý thuyết của phương pháp, bao gồm tác động của chi phí quay, điều kiện an toàn năng lượng, hành vi trong môi trường động và độ phức tạp của các bước lập kế hoạch chính.
+Chương này cũng đã mô tả chiến lược chọn mục tiêu bao phủ có xét điều kiện quay về căn cứ, chính sách dự phòng quay về có điều kiện, cơ chế sạc, xử lý vật cản động, vòng lặp mô phỏng, các trạng thái nhiệm vụ và hệ thống ghi log, thống kê. Các thành phần này tạo thành một hệ thống mô phỏng hoàn chỉnh, có khả năng chạy thử, quan sát và thu thập dữ liệu để đánh giá. Trên cơ sở đó, Chương 4 sẽ phân tích sâu hơn các đặc điểm lý thuyết của phương pháp, bao gồm tác động của chi phí quay, điều kiện an toàn năng lượng, hành vi trong môi trường động và độ phức tạp của các bước lập kế hoạch chính.
 
 \end{document}
