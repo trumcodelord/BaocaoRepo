@@ -15,7 +15,7 @@ Bài toán bao phủ trong đồ án không chỉ xét số lượng ô đã đi
 
 Để tập trung vào bài toán lập kế hoạch và đánh giá thuật toán, đồ án sử dụng một số giả thiết mô hình. Thứ nhất, môi trường được biểu diễn bằng bản đồ lưới hai chiều đã biết trong phạm vi mô phỏng. Thứ hai, robot di chuyển giữa các ô kề cạnh theo bốn hướng chính. Thứ ba, một ô được xem là đã bao phủ khi robot đi qua ô đó trong mô hình. Thứ tư, đồ án không mô phỏng trực tiếp cảm biến dò mìn, sai số định vị, sai số điều khiển hoặc động lực học chi tiết của robot ngoài thực địa. Thứ năm, vật cản động trong môi trường là các tác nhân chuyển động hợp tác, không phải đối tượng đối kháng.
 
-Các giả thiết này không nhằm khẳng định rằng bài toán dò mìn thực tế có thể được giải quyết hoàn chỉnh chỉ bằng mô hình lưới. Mục tiêu của chúng là tạo ra một khung mô phỏng đủ rõ ràng để nghiên cứu tác động của địa hình có trọng số, chi phí quay, giới hạn năng lượng, cơ chế quay về căn cứ và vật cản động tới hành vi bao phủ của robot.
+Các giả thiết này xác định phạm vi của đồ án: đồ án nghiên cứu bài toán lập kế hoạch bao phủ trên bản đồ lưới, chưa xử lý cảm biến dò mìn và điều khiển robot ngoài thực địa. Trong phạm vi đó, mô hình đủ để khảo sát tác động của địa hình có trọng số, chi phí quay, giới hạn năng lượng, cơ chế quay về căn cứ và vật cản động tới hành vi bao phủ của robot.
 
 Các ký hiệu chính được sử dụng trong chương này được trình bày trong Bảng 2.1.
 
@@ -67,7 +67,7 @@ $\kappa_{\text{turn}}$ & Hệ số hiệu chỉnh chi phí quay, dùng để gom
 
 \section{Bản đồ lưới và mô hình đồ thị}
 
-Bản đồ lưới là một cách biểu diễn phổ biến trong mô phỏng robot vì nó đơn giản, trực quan và phù hợp với bài toán bao phủ. Mỗi ô trên bản đồ tương ứng với một vùng nhỏ trong môi trường. Ô đó có thể là ô hợp lệ, ô vật cản hoặc ô hợp lệ nhưng có chi phí địa hình khác nhau. Trong mô hình này, robot di chuyển từ một ô sang một ô kề cạnh, không xét chuyển động chéo.
+Bản đồ lưới là biểu diễn được dùng trong đồ án vì nó khớp với cách chương trình mô phỏng chia môi trường thành các ô rời rạc. Mỗi ô tương ứng với một vùng nhỏ trong môi trường và có thể là ô hợp lệ, ô vật cản hoặc ô hợp lệ có chi phí địa hình riêng. Trong mô hình này, robot di chuyển giữa các ô kề cạnh theo bốn hướng chính, không xét chuyển động chéo.
 
 Bản đồ lưới có thể được biểu diễn dưới dạng một đồ thị:
 \[
@@ -98,7 +98,7 @@ Về mặt thuật toán, việc gán chi phí dương cho từng ô hợp lệ 
 
 Một điểm cần lưu ý là $c(v)$ mang ý nghĩa chi phí tương đối trên một thang đo chuẩn hóa. Trong nhiều phân tích lập kế hoạch, điều quan trọng không phải là giá trị tuyệt đối của một đơn vị chi phí theo Joule, mà là quan hệ tương đối giữa các ô và giữa các thao tác. Nếu toàn bộ chi phí địa hình được nhân với cùng một hệ số dương, thứ tự ưu tiên giữa các đường đi thường được giữ nguyên, còn thang năng lượng tuyệt đối chỉ thay đổi tương ứng. Vì vậy, mô hình dùng $c(v)$ như một đại lượng chuẩn hóa để so sánh đường đi, thay vì cố gắng mô phỏng đầy đủ mọi thành phần vật lý của robot ngoài thực địa.
 
-Cách biểu diễn này giữ được sự cân bằng giữa hai yêu cầu. Một mặt, nó vẫn bám vào trực giác vật lý về mức độ khó di chuyển của địa hình. Mặt khác, nó đủ đơn giản để đưa vào mô hình đồ thị và phục vụ lập kế hoạch đường đi trong môi trường lưới.
+Với cách biểu diễn này, chi phí địa hình vừa giữ được ý nghĩa về mức độ khó di chuyển, vừa đưa trực tiếp được vào mô hình đồ thị để phục vụ lập kế hoạch đường đi.
 
 \section{Tỷ lệ bao phủ và điều kiện hoàn thành nhiệm vụ}
 
@@ -151,7 +151,7 @@ Trong bản đồ lưới bốn hướng, tập hướng của robot được đ
 \[
 H=\{N,E,S,W\}.
 \]
-Việc chọn bốn hướng chính là một mức rời rạc hóa tiêu biểu cho bản đồ lưới vuông. Nếu cần xét di chuyển chéo, nhiều hướng hơn hoặc góc quay mịn hơn, có thể mở rộng tập hướng $H$ và định nghĩa thêm các chi phí chuyển hướng tương ứng. Khi đó bản chất bài toán vẫn là tìm đường trên không gian trạng thái có hướng, nhưng số trạng thái và số cạnh cần xét sẽ tăng lên. Vì vậy, trong phạm vi đồ án, mô hình bốn hướng được chọn để giữ thuật toán rõ ràng, ổn định và đủ phù hợp với mục tiêu mô phỏng.
+Việc chọn bốn hướng chính phù hợp với bản đồ lưới vuông và với cách cài đặt hiện tại của chương trình mô phỏng. Nếu xét thêm chuyển động chéo, nhiều hướng hơn hoặc góc quay mịn hơn, tập hướng $H$ và số cạnh chuyển trạng thái sẽ tăng lên. Trong phạm vi đồ án, mô hình bốn hướng giúp giữ số trạng thái ở mức kiểm soát được và vẫn thể hiện được ảnh hưởng của chi phí quay.
 
 Nếu chỉ xét vị trí, trạng thái của robot tại một thời điểm có thể được biểu diễn bằng một ô $v$. Tuy nhiên, khi chi phí quay được đưa vào mô hình, trạng thái cần chứa thêm hướng hiện tại của robot. Khi đó, một trạng thái có hướng được biểu diễn là:
 \[
@@ -200,7 +200,7 @@ Robot swerve-drive & Mỗi module bánh có thể xoay hướng độc lập; ro
 \caption{Quy đổi một số cấu trúc truyền động robot về hai mô hình năng lượng trong đồ án}
 \end{table}
 
-Cách phân loại trên phù hợp với nhiều nền tảng robot thực tế. TIAGo Base của PAL Robotics là một ví dụ về nền tảng dùng hai bánh chủ động và bốn bánh tự do, trong khi TIAGo OMNI Base là nền tảng di chuyển toàn hướng \cite{palroboticsTiagoBase2026,palroboticsOmniBase2026}. Clearpath Husky A300 là ví dụ điển hình của robot mặt đất bốn bánh dùng cho môi trường ngoài trời và địa hình khó \cite{clearpathHuskyA3002026}. Các module swerve thương mại như MAXSwerve cũng cho thấy swerve-drive là một cấu trúc truyền động thực tế, thường được dùng khi cần khả năng đổi hướng linh hoạt \cite{revroboticsMaxSwerve2026}. Các ví dụ này không nhằm biến đồ án thành một khảo sát cơ khí robot, mà nhằm làm rõ rằng hai mô hình năng lượng của đồ án có thể ánh xạ tới nhiều cấu trúc truyền động phổ biến.
+Cách phân loại trên có thể liên hệ với một số nền tảng robot thực tế. TIAGo Base của PAL Robotics là ví dụ về nền tảng dùng hai bánh chủ động và bốn bánh tự do, trong khi TIAGo OMNI Base là nền tảng di chuyển toàn hướng \cite{palroboticsTiagoBase2026,palroboticsOmniBase2026}. Clearpath Husky A300 là robot mặt đất bốn bánh dùng cho môi trường ngoài trời và địa hình khó \cite{clearpathHuskyA3002026}. Các module swerve thương mại như MAXSwerve cũng cho thấy swerve-drive là cấu trúc truyền động thực tế khi cần đổi hướng linh hoạt \cite{revroboticsMaxSwerve2026}. Các ví dụ này chỉ dùng để nối hai mô hình năng lượng của đồ án với các cấu trúc truyền động phổ biến.
 
 Từ góc nhìn mô hình hóa, robot vi sai hai bánh, robot skid-steer nhiều bánh và robot bánh xích đều có thể được xem là cùng một họ động học ở mức lập kế hoạch nếu hệ truyền động có thể quy về hai cụm trái--phải. Khi hai cụm truyền động quay ngược chiều nhau, robot có thể quay tại chỗ hoặc gần tại chỗ. Sự khác biệt giữa hai bánh, nhiều bánh hoặc bánh xích không nhất thiết làm thay đổi cấu trúc thuật toán lập kế hoạch; khác biệt chủ yếu được phản ánh qua hệ số chi phí quay $\kappa_{\text{turn}}$, đại diện cho ma sát, trượt và tổn hao cơ học khi đổi hướng.
 
@@ -235,7 +235,7 @@ Robot quân sự mặt đất & Skid-steer, nhiều bánh hoặc bánh xích & C
 \caption{Liên hệ giữa lĩnh vực ứng dụng và cấu trúc truyền động thường gặp}
 \end{table}
 
-Bảng trên không nhằm khẳng định một cấu trúc truyền động luôn tốt hơn cấu trúc khác. Mỗi loại robot được tối ưu cho một nhóm môi trường và nhiệm vụ khác nhau. Đối với đồ án này, bối cảnh chính là robot bao phủ trong môi trường có địa hình khó, ràng buộc năng lượng và yêu cầu quay về căn cứ. Vì vậy, việc chọn mô hình vi sai tương đương có chi phí quay làm mô hình chính là phù hợp với lớp ứng dụng mục tiêu. Mô hình toàn hướng lý tưởng vẫn có giá trị vì nó cung cấp một đối chứng cho nhóm robot toàn hướng hoặc cho các trường hợp chi phí quay được bỏ qua ở mức lập kế hoạch.
+Bảng trên cho thấy mỗi cấu trúc truyền động phục vụ một nhóm môi trường và nhiệm vụ khác nhau. Đối với đồ án này, bối cảnh chính là robot bao phủ trong môi trường có địa hình khó, ràng buộc năng lượng và yêu cầu quay về căn cứ. Vì vậy, mô hình vi sai tương đương có chi phí quay được dùng làm mô hình chính. Mô hình toàn hướng lý tưởng được giữ làm mô hình đối chứng cho nhóm robot toàn hướng hoặc cho các trường hợp chi phí quay được bỏ qua ở mức lập kế hoạch.
 
 \subsection*{Thảo luận kỹ thuật về lựa chọn mô hình robot}
 
@@ -245,7 +245,7 @@ Khả năng di chuyển toàn hướng cũng không đồng nghĩa robot sẽ lu
 
 Các cơ cấu toàn hướng luôn đi kèm một số đánh đổi kỹ thuật. Bánh omni hoặc mecanum có nhiều con lăn nhỏ, nhiều chi tiết tiếp xúc và thường nhạy hơn với bụi, sỏi, bùn, mặt nền mềm hoặc gờ cao. Swerve-drive mở rộng tập chuyển động nhưng đòi hỏi nhiều module điều khiển, cơ cấu xoay bánh, cảm biến góc và quá trình đồng bộ phức tạp hơn. Ngược lại, bánh cao su thông thường, cụm bánh skid-steer hoặc bánh xích có cấu tạo trực tiếp hơn, truyền lực tốt theo hướng lăn, chịu tải tốt và phù hợp hơn với địa hình không đồng nhất. Đây là một đánh đổi kinh điển trong robot di động: tăng bậc tự do chuyển động thường làm tăng độ phức tạp cơ khí và điều khiển, trong khi giảm độ phức tạp cơ khí có thể tăng độ tin cậy và khả năng hoạt động ngoài trời \cite{siegwart2011autonomous}.
 
-Từ các phân tích trên, mô hình trong đồ án được xây dựng theo hướng tách rõ hai giả định. Mô hình có chi phí quay đại diện cho lớp robot có hướng thân rõ ràng, phù hợp với robot vi sai, skid-steer và bánh xích trong các nhiệm vụ địa hình hoặc rủi ro. Mô hình toàn hướng lý tưởng đại diện cho lớp robot toàn hướng hoặc các trường hợp chi phí quay đủ nhỏ để có thể bỏ qua trong phạm vi lập kế hoạch. Cách tách này giúp hệ thống mô phỏng không bị gắn cứng với một loại robot cụ thể, đồng thời vẫn giữ được tính đơn giản cần thiết để phân tích thuật toán và so sánh thực nghiệm.
+Từ các phân tích trên, đồ án sử dụng hai giả định lập kế hoạch. Mô hình có chi phí quay đại diện cho lớp robot có hướng thân rõ ràng, như robot vi sai, skid-steer và bánh xích trong các nhiệm vụ địa hình hoặc rủi ro. Mô hình toàn hướng lý tưởng đại diện cho lớp robot toàn hướng hoặc các trường hợp chi phí quay đủ nhỏ để bỏ qua ở mức lập kế hoạch. Cách tách này giúp phần mô phỏng so sánh trực tiếp ảnh hưởng của chi phí quay mà không phải gắn cứng với một mẫu robot cụ thể.
 
 \section{Mô hình năng lượng di chuyển và năng lượng quay}
 
@@ -297,9 +297,9 @@ Với góc quay 180 độ, tức là $\theta=\pi$, năng lượng quay là:
 \[
 E_{\text{turn}} = \kappa_{\text{turn}}c(v).
 \]
-Trong trường hợp mô phỏng chọn $\kappa_{\text{turn}}=1$, quay 90 độ tại ô $v$ tiêu tốn $\frac{1}{2}c(v)$ và quay 180 độ tiêu tốn $c(v)$. Đây là lựa chọn chuẩn hóa được sử dụng để giữ chi phí quay cùng thang đo với chi phí di chuyển trên bản đồ lưới. Lựa chọn này không nhằm mô tả đầy đủ mọi hiện tượng tương tác bánh xe--mặt đất, mà nhằm tạo ra một mô hình năng lượng có cơ sở vật lý đủ rõ và có thể kiểm soát được trong thuật toán.
+Trong trường hợp mô phỏng chọn $\kappa_{\text{turn}}=1$, quay 90 độ tại ô $v$ tiêu tốn $\frac{1}{2}c(v)$ và quay 180 độ tiêu tốn $c(v)$. Đây là lựa chọn chuẩn hóa để đưa chi phí quay về cùng thang đo với chi phí di chuyển trên bản đồ lưới. Mô hình này chưa mô tả đầy đủ mọi tương tác bánh xe--mặt đất, nhưng đủ cho mục tiêu của đồ án: đưa chi phí đổi hướng vào quá trình lập kế hoạch.
 
-Việc chọn $L=2s/\pi$ không có nghĩa đây là kích thước vật lý duy nhất của robot. Lựa chọn này chủ yếu đóng vai trò chuẩn hóa để thao tác quay 90 độ có chi phí bằng một nửa chi phí di chuyển qua một ô trên cùng loại địa hình. Tổng quát hơn, từ công thức $E_{\text{turn}}(\theta,v)=\kappa_{\text{turn}}c(v)L|\theta|/(2s)$ có thể thấy chi phí quay tỉ lệ thuận với tỉ lệ $L/s$. Nếu robot thực tế có tỉ lệ $L/s$ khác, mô hình vẫn giữ nguyên dạng và chỉ cần điều chỉnh hệ số tỉ lệ hình học hoặc hấp thụ khác biệt đó vào $\kappa_{\text{turn}}$. Do đó, lựa chọn $L=2s/\pi$ là một chuẩn hóa thuận tiện, không làm mất khả năng biểu diễn các mức chi phí quay khác trong cùng một khung mô hình.
+Việc chọn $L=2s/\pi$ không có nghĩa đây là kích thước vật lý duy nhất của robot. Lựa chọn này chủ yếu đóng vai trò chuẩn hóa để thao tác quay 90 độ có chi phí bằng một nửa chi phí di chuyển qua một ô trên cùng loại địa hình. Tổng quát hơn, từ công thức $E_{\text{turn}}(\theta,v)=\kappa_{\text{turn}}c(v)L|\theta|/(2s)$ có thể thấy chi phí quay tỉ lệ thuận với tỉ lệ $L/s$. Nếu robot thực tế có tỉ lệ $L/s$ khác, mô hình vẫn giữ nguyên dạng và chỉ cần điều chỉnh hệ số tỉ lệ hình học. Do đó, lựa chọn $L=2s/\pi$ là một chuẩn hóa thuận tiện, không làm mất khả năng biểu diễn các mức chi phí quay khác trong cùng một khung mô hình.
 
 Với một đường đi có hướng:
 \[
@@ -353,9 +353,9 @@ Tổng năng lượng của một đường đi trong mô hình toàn hướng c
 \[
 E(P)=\sum_{i=1}^{k}E_{\text{move}}(v_{i-1},v_i).
 \]
-Mô hình toàn hướng lý tưởng không được xây dựng nhằm thay thế mô hình có chi phí quay. Nó biểu diễn một giả định khác về robot, phù hợp hơn với các hệ thống có khả năng đổi hướng linh hoạt hoặc khi chi phí quay thân nhỏ không đáng kể trong phạm vi mô hình lập kế hoạch. Ngược lại, trong bối cảnh chính của đồ án là robot mặt đất dùng cho dò mìn, rà soát hoặc khảo sát địa hình khó, mô hình có chi phí quay là mô hình chính vì các nền tảng vi sai, skid-steer và bánh xích đều có hướng thân rõ ràng và phải trả chi phí khi đổi hướng.
+Mô hình toàn hướng lý tưởng là mô hình đối chứng của đồ án. Mô hình này biểu diễn giả định rằng chi phí quay thân nhỏ không đáng kể trong phạm vi lập kế hoạch, phù hợp với robot toàn hướng hoặc các hệ có khả năng đổi hướng linh hoạt. Trong bối cảnh chính của đồ án là robot mặt đất dùng cho dò mìn, rà soát hoặc khảo sát địa hình khó, mô hình có chi phí quay vẫn là mô hình chính vì các nền tảng vi sai, skid-steer và bánh xích đều có hướng thân rõ ràng và phải trả chi phí khi đổi hướng.
 
-Việc so sánh hai mô hình không nhằm kết luận rằng robot toàn hướng luôn tốt hơn hoặc robot vi sai luôn tốt hơn. Nó chỉ cho phép đánh giá tác động của giả định cơ khí tới hành vi bao phủ. Trong cùng một bản đồ và cùng một chiến lược nhiệm vụ, nếu hai mô hình cho kết quả khác nhau về số bước, số lần quay về căn cứ, số bước đi lại hoặc năng lượng tiêu thụ, sự khác biệt đó cho thấy chi phí quay không chỉ là phần cộng thêm sau khi có đường đi, mà có thể ảnh hưởng trực tiếp tới quyết định lập kế hoạch.
+Việc so sánh hai mô hình dùng để đánh giá tác động của giả định cơ khí tới hành vi bao phủ. Trong cùng một bản đồ và cùng một chiến lược nhiệm vụ, nếu hai mô hình cho kết quả khác nhau về số bước, số lần quay về căn cứ, số bước đi lại hoặc năng lượng tiêu thụ, sự khác biệt đó chứng tỏ chi phí quay không chỉ là phần cộng thêm sau khi có đường đi, mà đã ảnh hưởng trực tiếp tới quyết định lập kế hoạch.
 
 \section{Kết chương}
 

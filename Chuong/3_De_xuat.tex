@@ -41,7 +41,7 @@ Luồng xử lý tổng quát của hệ thống gồm các bước chính sau:
 \caption{Quy trình tổng quát của hệ thống mô phỏng}
 \end{table}
 
-Có thể xem hệ thống như một bộ điều khiển nhiệm vụ theo vòng lặp. Ở mỗi bước, robot không quyết định chỉ dựa trên mục tiêu gần nhất, mà còn xét chi phí đường đi, năng lượng còn lại, đường quay về căn cứ và trạng thái an toàn của môi trường. Điều này giúp mô phỏng phản ánh rõ hơn các ràng buộc thường gặp trong một nhiệm vụ dài, đặc biệt là khi robot hoạt động trong khu vực có rủi ro hoặc có các đối tượng chuyển động.
+Hệ thống hoạt động theo vòng lặp nhiệm vụ. Ở mỗi bước, robot không chỉ chọn mục tiêu gần nhất, mà còn xét chi phí đường đi, năng lượng còn lại, đường quay về căn cứ và trạng thái an toàn của môi trường. Nhờ đó, chương trình mô phỏng được các ràng buộc chính của một nhiệm vụ dài: phải bao phủ thêm ô mới, nhưng vẫn giữ khả năng quay về và xử lý vật cản động.
 
 Các thành phần chính của hệ thống được tóm tắt trong Bảng 3.1.
 
@@ -139,7 +139,7 @@ Tập hướng của robot gồm bốn hướng chính:
 \[
 H=\{N,E,S,W\}.
 \]
-Cách rời rạc hóa bốn hướng được chọn vì phù hợp với bản đồ lưới và giúp hệ thống mô phỏng ổn định. Các mô hình nhiều hướng hơn có thể được xây dựng bằng cách mở rộng tập $H$ và bổ sung chi phí chuyển hướng tương ứng, nhưng điều đó làm tăng số trạng thái mà bộ lập kế hoạch phải xử lý.
+Cách rời rạc hóa bốn hướng được chọn vì khớp với bản đồ lưới vuông và giữ số trạng thái ở mức kiểm soát được. Các mô hình nhiều hướng hơn có thể được xây dựng bằng cách mở rộng tập $H$ và bổ sung chi phí chuyển hướng tương ứng, nhưng khi đó bộ lập kế hoạch phải xử lý nhiều trạng thái hơn.
 
 Do đó, một trạng thái dùng cho lập kế hoạch đường đi có dạng:
 \[
@@ -356,7 +356,7 @@ Pseudo-code của bước chọn mục tiêu có thể viết như sau:
 
 Điểm quan trọng của chiến lược này là robot không chọn mục tiêu chỉ vì mục tiêu đó gần nhất theo số bước. Mục tiêu được chọn phải đồng thời thỏa mãn ba điều kiện: có đường đi tới, có đường quay về và đủ năng lượng cho cả hai chặng kèm dự phòng. Cách chọn này giúp hạn chế tình huống robot đạt thêm một phần bao phủ trước mắt nhưng làm suy giảm khả năng quay về căn cứ.
 
-Chiến lược trên thuộc nhóm chọn mục tiêu tham lam có ràng buộc. Hệ thống không tìm toàn bộ thứ tự bao phủ tối ưu cho cả nhiệm vụ, mà chọn mục tiêu khả thi tốt nhất tại thời điểm lập kế hoạch hiện tại. Lựa chọn này giúp quá trình mô phỏng ổn định, dễ kiểm tra và phù hợp với mục tiêu đánh giá tác động của chi phí quay, trọng số địa hình, năng lượng và vật cản động.
+Chiến lược trên thuộc nhóm chọn mục tiêu tham lam có ràng buộc. Hệ thống không tìm toàn bộ thứ tự bao phủ tối ưu cho cả nhiệm vụ, mà chọn mục tiêu khả thi tốt nhất tại thời điểm lập kế hoạch hiện tại. Cách làm này giữ quá trình mô phỏng đơn giản, kiểm tra được bằng log và đủ để đánh giá tác động của chi phí quay, trọng số địa hình, năng lượng và vật cản động.
 
 \section{Cơ chế quay về căn cứ và sạc}
 
@@ -390,7 +390,7 @@ hoặc:
 \[
 E_t \le E_{\min}.
 \]
-Trong cấu hình hiện tại, $E_{\min}=3$. Trạng thái tới hạn không được hiểu là hệ thống lập tức thất bại trong mọi trường hợp. Nó là tín hiệu để robot chuyển sang các cơ chế ứng phó thận trọng hơn như chờ, tìm đường vòng, quay về nếu có thể, hoặc bảo toàn trạng thái nhiệm vụ.
+Trong cấu hình hiện tại, $E_{\min}=3$. Khi rơi vào vùng năng lượng tới hạn, robot không tiếp tục bao phủ như bình thường mà chuyển sang các cơ chế ứng phó thận trọng hơn như chờ, tìm đường vòng, quay về nếu có thể, hoặc bảo toàn trạng thái nhiệm vụ.
 
 Khi robot về tới căn cứ, nếu nhiệm vụ chưa hoàn thành, robot chuyển sang trạng thái sạc. Sau khi sạc đầy, robot quay lại trạng thái bao phủ bình thường và tiếp tục xử lý các ô chưa bao phủ. Nếu toàn bộ bản đồ đã được bao phủ và robot đã ở căn cứ, nhiệm vụ được xem là hoàn thành đầy đủ.
 
@@ -500,7 +500,7 @@ HOLD\_SAFE \rightarrow RETURN\_TO\_BASE
 \]
 khi chờ quá lâu mà chưa khôi phục được đường bao phủ phù hợp.
 
-Những chuyển trạng thái này không nhằm tạo ra một mô hình điều khiển robot thực địa hoàn chỉnh. Chúng là một chính sách mô phỏng ở mức nhiệm vụ, giúp robot có hành vi nhất quán khi gặp các ràng buộc về năng lượng, vật cản động và điều kiện quay về.
+Những chuyển trạng thái này là chính sách nhiệm vụ của chương trình mô phỏng, chưa phải bộ điều khiển robot thực địa đầy đủ. Vai trò của chúng là làm cho robot có hành vi nhất quán khi gặp các ràng buộc về năng lượng, vật cản động và điều kiện quay về.
 
 \section{Ghi log, thống kê và trực quan hóa}
 
