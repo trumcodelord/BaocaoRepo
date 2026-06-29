@@ -15,6 +15,17 @@
 \usepackage{amsthm}
 \usepackage{latexsym}
 \usepackage{amsmath}
+\numberwithin{equation}{chapter}
+
+% teacher_formula_numbering_start
+% Theo góp ý: các công thức hiển thị dùng \[ ... \] sẽ được đánh số như equation.
+% Nếu muốn giữ một công thức không đánh số, dùng \begin{equation*} ... \end{equation*}.
+\let\oldDisplayMathOpen\[
+\let\oldDisplayMathClose\]
+\renewcommand{\[}{\begin{equation}}
+\renewcommand{\]}{\end{equation}}
+% teacher_formula_numbering_end
+
 \usepackage{amssymb}
 \usepackage{amsbsy}
 \usepackage{times}
@@ -34,13 +45,20 @@
 \usepackage{multirow}
 \usepackage{fancyhdr}
 \usepackage[font=small,labelfont=bf]{caption}
+\usepackage{floatrow}
+\floatsetup[table]{capposition=top}
+\floatsetup[figure]{capposition=bottom}
+\captionsetup[table]{position=top,skip=6pt}
+\captionsetup[figure]{position=bottom,skip=6pt}
 \addto\captionsenglish{%
 \renewcommand{\chaptername}{CHƯƠNG}%
 \renewcommand{\tablename}{Bảng}%
+\renewcommand{\figurename}{Hình}%
 \renewcommand{\listtablename}{Danh sách bảng}%
 }
 \renewcommand{\chaptername}{CHƯƠNG}
 \renewcommand{\tablename}{Bảng}
+\renewcommand{\figurename}{Hình}
 \renewcommand{\listtablename}{Danh sách bảng}
 \setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
 \setlength{\intextsep}{8pt plus 2pt minus 2pt}

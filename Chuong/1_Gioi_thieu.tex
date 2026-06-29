@@ -7,6 +7,19 @@ Chương này trình bày bối cảnh, lý do lựa chọn đề tài, mục ti
 
 Robot tự hành ngày càng được sử dụng trong các nhiệm vụ mà con người khó trực tiếp thực hiện hoặc việc tiếp cận khu vực làm việc tiềm ẩn nhiều rủi ro. Một trong các nhóm nhiệm vụ quan trọng là nhiệm vụ bao phủ khu vực, tức là robot phải di chuyển sao cho toàn bộ hoặc gần như toàn bộ phần không gian cần quan tâm được đi qua, quan sát, quét hoặc kiểm tra. Bài toán này xuất hiện trong nhiều ứng dụng thực tế như robot lau nhà, robot kiểm tra bề mặt, robot tuần tra, robot khảo sát kho bãi, robot cứu trợ cứu nạn và robot dò mìn. Điểm chung của các ứng dụng này là robot không chỉ cần đi từ một điểm xuất phát tới một điểm đích, mà cần xây dựng một chiến lược di chuyển có khả năng bao phủ toàn bộ vùng làm việc theo một tiêu chí nhất định.
 
+\begin{figure}[H]
+\centering
+\IfFileExists{figures/robot_mine_illustration.png}{%
+    \includegraphics[width=0.78\textwidth]{figures/robot_mine_illustration.png}%
+}{%
+    \fbox{\parbox[c][5cm][c]{0.78\textwidth}{\centering Hình minh họa robot tự hành trong môi trường nguy hiểm\\\small Thay khung này bằng file \texttt{figures/robot\_mine\_illustration.png}}}%
+}
+\caption{Minh họa robot tự hành hoạt động trong môi trường nguy hiểm}
+\label{fig:mine_robot_illustration}
+\end{figure}
+
+Hình~\ref{fig:mine_robot_illustration} minh họa bối cảnh ứng dụng của các hệ thống robot tự hành trong môi trường nguy hiểm. Trong phạm vi đồ án này, hình minh họa chỉ có vai trò làm rõ động cơ ứng dụng; hệ thống không mô phỏng cảm biến dò mìn, không thiết kế phần cứng robot và không triển khai robot ngoài thực địa. Đồ án tập trung vào bài toán mô hình hóa, lập kế hoạch bao phủ và đánh giá hành vi của robot trên bản đồ lưới có xét năng lượng, vật cản và khả năng quay về căn cứ.
+
 Trong bối cảnh robot dò mìn hoặc rà soát vật nguy hiểm, yêu cầu bao phủ có ý nghĩa đặc biệt quan trọng. Nếu một khu vực nguy hiểm chưa được kiểm tra đầy đủ, các ô chưa được đi qua có thể tương ứng với những vị trí còn tồn tại rủi ro. Vì vậy, robot cần có khả năng lập kế hoạch để lần lượt tiếp cận các vùng chưa được bao phủ, đồng thời hạn chế việc di chuyển dư thừa vì năng lượng của robot thường bị giới hạn. Ngoài ra, robot không thể chỉ xét đường đi ngắn nhất theo số ô trên bản đồ, bởi trong môi trường thực tế, việc di chuyển qua các loại địa hình khác nhau có thể tiêu tốn năng lượng khác nhau. Chẳng hạn, một ô địa hình bằng phẳng và một ô địa hình khó đi không nên được xem là có cùng chi phí.
 
 Một yếu tố khác cần được quan tâm là hướng di chuyển của robot. Tùy theo cấu trúc truyền động, chi phí đổi hướng có thể khác nhau đáng kể giữa các loại robot. Với các robot di chuyển toàn hướng, chẳng hạn robot sử dụng bánh omni, bánh mecanum hoặc cơ cấu swerve-drive, robot có thể thay đổi hướng chuyển động linh hoạt mà không nhất thiết phải quay thân trước, do đó chi phí quay trong một số mô hình có thể không chi phối quyết định lập kế hoạch. Ngược lại, với robot vi sai hai bánh, robot bánh xích hoặc các robot có thân và hướng chuyển động rõ ràng, thao tác đổi hướng thường kéo theo thời gian, ma sát và năng lượng bổ sung. Vì vậy, đồ án đưa hướng hiện tại của robot vào trạng thái lập kế hoạch để khảo sát ảnh hưởng của chi phí quay; đồng thời sử dụng mô hình toàn hướng lý tưởng như trường hợp đối chứng khi chi phí quay được bỏ qua ở mức lập kế hoạch.
