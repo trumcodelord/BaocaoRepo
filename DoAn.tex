@@ -16,16 +16,6 @@
 \usepackage{latexsym}
 \usepackage{amsmath}
 \numberwithin{equation}{chapter}
-
-% teacher_formula_numbering_start
-% Theo góp ý: các công thức hiển thị dùng \[ ... \] sẽ được đánh số như equation.
-% Nếu muốn giữ một công thức không đánh số, dùng \begin{equation*} ... \end{equation*}.
-\let\oldDisplayMathOpen\[
-\let\oldDisplayMathClose\]
-\renewcommand{\[}{\begin{equation}}
-\renewcommand{\]}{\end{equation}}
-% teacher_formula_numbering_end
-
 \usepackage{amssymb}
 \usepackage{amsbsy}
 \usepackage{times}
@@ -73,7 +63,7 @@
 \usepackage{parskip}
 \usepackage{tocbasic}
 \usepackage{blindtext}
-\renewcommand{\bibname}{Danh_sach_tai_lieu_tham_khao}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
 \usepackage{silence}
 \WarningFilter{biblatex}{Macro 'volume+number' undefined}
 \WarningFilter{biblatex}{'babel/polyglossia' detected but 'csquotes' missing}
@@ -135,7 +125,7 @@
 \hypersetup{pdfborder = {0 0 0}}
 \hypersetup{pdftitle={\TITLE}, pdfauthor={\AUTHOR}}
 \usepackage[all]{hypcap}
-\graphicspath{{figures/}{../figures/}}
+\graphicspath{{Hinh_ve/}{../Hinh_ve/}{figures/}{../figures/}}
 \counterwithin{figure}{chapter}
 \title{\bf \TITLE}
 \author{\AUTHOR}
@@ -247,14 +237,9 @@
 \subfile{Chuong/6_Ket_luan}
 
 \newpage
-\chapter*{MỘT SỐ LƯU Ý VỀ TÀI LIỆU THAM KHẢO}
-\label{chapter:reference}
 \subfile{Chuong/7_Tai_lieu_tham_khao}
-
-\newpage
-\renewcommand\bibname{TÀI LIỆU THAM KHẢO}
-\printbibliography
 \phantomsection\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\printbibliography[title={TÀI LIỆU THAM KHẢO}]
 
 \appendixpage
 \appendix

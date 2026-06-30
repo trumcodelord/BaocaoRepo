@@ -1,13 +1,13 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Phụ lục này ghi lại một số lưu ý về quá trình phân tích log và các thử nghiệm phát triển không được giữ lại trong phiên bản cuối. Mục tiêu của phụ lục không phải là mở rộng phần kết quả chính, mà là làm rõ cách số liệu được đối chiếu và cách một số quyết định kỹ thuật được đưa ra trong quá trình phát triển.
+Phụ lục này ghi lại một số lưu ý về quá trình tổng hợp log và các thử nghiệm phát triển không được giữ lại trong phiên bản cuối. Mục tiêu của phụ lục không phải là mở rộng phần kết quả chính, mà là làm rõ cách số liệu được đối chiếu và cách một số quyết định kỹ thuật được đưa ra trong quá trình phát triển.
 
 \section{Ghi chú về việc đọc và tổng hợp log}
 
-Log mô phỏng có dung lượng lớn và chứa nhiều sự kiện lặp lại theo từng bước di chuyển, do đó việc đọc thủ công toàn bộ log thô cho từng kịch bản là không hiệu quả. Trong đồ án, log được sử dụng chủ yếu theo hướng trích xuất các chỉ số tổng hợp như tỷ lệ bao phủ, số bước, năng lượng tiêu thụ, năng lượng quay, số lần quay về căn cứ, số lần sạc, số bước đi lại và trạng thái kết thúc nhiệm vụ.
+Log mô phỏng có dung lượng lớn và chứa nhiều sự kiện lặp lại theo từng bước di chuyển. Vì vậy, báo cáo không đọc thủ công toàn bộ log thô của từng kịch bản, mà sử dụng các chỉ số tổng hợp do chương trình xuất ra. Các chỉ số chính gồm tỷ lệ bao phủ, số bước, năng lượng tiêu thụ, số lần quay về căn cứ, số lần sạc, trạng thái kết thúc và trạng thái robot tại căn cứ.
 
-Với các đoạn log dài hoặc có chuỗi sự kiện phức tạp, công cụ AI có thể được sử dụng như một phương tiện hỗ trợ đọc, tóm tắt và phát hiện mẫu hành vi lặp lại. Tuy nhiên, các kết luận đưa vào báo cáo vẫn được đối chiếu với các chỉ số định lượng do chương trình xuất ra và không dựa riêng vào diễn giải tự động. Nói cách khác, AI chỉ đóng vai trò hỗ trợ phân tích log hoặc hỗ trợ rà soát văn bản kỹ thuật; các giá trị định lượng trong bảng kết quả không được AI tự sinh ra mà được lấy từ log chạy thực nghiệm.
+Các bảng trong Chương 5 và Phụ lục B được đối chiếu với file benchmark tổng hợp. Khi một kịch bản được chạy nhiều lần trong quá trình hiệu chỉnh, báo cáo chỉ lấy lần chạy mới nhất theo trường \texttt{started\_at} của cùng một \texttt{test\_name}. Cách làm này giúp tránh việc các lần chạy thử trung gian ảnh hưởng tới kết quả cuối cùng.
 
 \section{Thử nghiệm heuristic phát hiện island}
 
