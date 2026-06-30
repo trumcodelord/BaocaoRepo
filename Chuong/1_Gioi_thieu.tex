@@ -9,12 +9,20 @@ Robot tự hành ngày càng được sử dụng trong các nhiệm vụ mà co
 
 \begin{figure}[H]
 \centering
-\IfFileExists{figures/robot_mine_illustration.png}{%
-    \includegraphics[width=0.78\textwidth]{figures/robot_mine_illustration.png}%
-}{%
-    \fbox{\parbox[c][5cm][c]{0.78\textwidth}{\centering Hình minh họa robot tự hành trong môi trường nguy hiểm\\\small Thay khung này bằng file \texttt{figures/robot\_mine\_illustration.png}}}%
-}
-\caption{Minh họa robot tự hành hoạt động trong môi trường nguy hiểm}
+\begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Hinh_ve/robot_talon.png}
+    \caption{Robot TALON}
+    \label{fig:robot_talon}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Hinh_ve/robot_packbot_510.png}
+    \caption{Robot PackBot 510}
+    \label{fig:robot_packbot_510}
+\end{subfigure}
+\caption{Ví dụ các robot mặt đất cỡ nhỏ hoạt động trong môi trường nguy hiểm, gồm TALON và PackBot 510. Nguồn ảnh: Army Technology.}
 \label{fig:mine_robot_illustration}
 \end{figure}
 
