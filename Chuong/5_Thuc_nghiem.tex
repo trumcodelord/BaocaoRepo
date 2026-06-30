@@ -1,19 +1,19 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương này trình bày kết quả đánh giá thực nghiệm của hệ thống mô phỏng robot bao phủ có ràng buộc năng lượng, chi phí quay, cơ chế quay về căn cứ, sạc lại và xử lý vật cản động. Mục tiêu của thực nghiệm không phải là chứng minh phương pháp đề xuất là phương án tốt nhất cho mọi bản đồ, mà là kiểm tra xem các thành phần đã xây dựng ở các chương trước có tạo ra hành vi đúng kỳ vọng trong những kịch bản đại diện hay không. Các kết quả được tổng hợp từ log chạy cục bộ của chương trình. Báo cáo chỉ sử dụng các chỉ số tổng hợp và các trường năng lượng quan trọng, không đưa toàn bộ log thô vào nội dung chính.
+Chương này trình bày kết quả đánh giá thực nghiệm cuối cùng của hệ thống mô phỏng robot bao phủ có ràng buộc năng lượng, chi phí quay, cơ chế quay về căn cứ, sạc lại, vật cản tĩnh, vật cản động và địa hình có trọng số. Dữ liệu sử dụng trong chương này được tổng hợp từ file \texttt{benchmark\_index.csv}, gồm 77 lần chạy. Do một số kịch bản được chạy nhiều lần trong quá trình hiệu chỉnh, báo cáo chỉ lấy lần chạy cuối cùng theo thời điểm \texttt{started\_at} của mỗi \texttt{test\_name} để tránh đếm lặp kết quả trung gian.
+
+Mục tiêu của thực nghiệm không phải là chứng minh phương pháp đề xuất là phương án tối ưu cho mọi bản đồ, mà là kiểm tra xem các thành phần đã xây dựng ở các chương trước có tạo ra hành vi hợp lý trong các tình huống đại diện hay không. Các nhóm thử nghiệm được thiết kế để quan sát ảnh hưởng của vị trí căn cứ, mô hình chi phí quay, dung lượng năng lượng, mật độ vật cản, vật cản động, chi phí địa hình và kích thước bản đồ.
 
 \section{Mục tiêu thực nghiệm}
 
-Các thực nghiệm được thiết kế để đánh giá bốn nhóm câu hỏi. Thứ nhất, hệ thống có hoàn thành được nhiệm vụ bao phủ và quay về căn cứ trong các bản đồ tĩnh đại diện hay không. Thứ hai, vị trí đặt căn cứ ảnh hưởng ra sao tới hiệu quả của nhiệm vụ khi robot phải liên tục kiểm tra khả năng quay về. Thứ ba, chi phí quay ảnh hưởng như thế nào tới tổng năng lượng, số bước, số lần đi lại và số chu kỳ quay về căn cứ khi so sánh với mô hình đối chứng toàn hướng. Thứ tư, khi gặp năng lượng thấp, mật độ vật cản cao, vật cản động, địa hình có trọng số hoặc bản đồ lớn hơn, hệ thống có xử lý nhiệm vụ theo hướng có kiểm soát hay không.
-
-Vì đồ án tập trung vào mô phỏng một robot trên bản đồ lưới, các thực nghiệm được thực hiện trên các bản đồ đầu vào cố định. Mỗi kịch bản được chạy với cùng một bộ quy tắc lập kế hoạch: robot dùng Dijkstra có hướng để tính chi phí đường đi, chọn mục tiêu chưa bao phủ gần nhất trong các mục tiêu khả thi về năng lượng, và chỉ tiếp tục bao phủ khi vẫn có khả năng quay về căn cứ kèm phần dự phòng. Với các kịch bản có vật cản động, chương trình ghi nhận trạng thái nhiệm vụ để quan sát phản ứng của robot khi đường hiện tại hoặc đường quay về bị ảnh hưởng.
+Các thực nghiệm tập trung vào sáu nhóm câu hỏi. Thứ nhất, robot có hoàn thành nhiệm vụ bao phủ và quay về căn cứ trong các bản đồ tĩnh hay không. Thứ hai, vị trí đặt căn cứ ảnh hưởng như thế nào tới tổng số bước, tổng năng lượng và số chu kỳ quay về. Thứ ba, chi phí quay có làm thay đổi hành vi của robot so với mô hình toàn hướng lý tưởng hay không. Thứ tư, khi năng lượng tối đa giảm, hệ thống có duy trì được nhiệm vụ bằng cách tăng số lần quay về và sạc lại hay không. Thứ năm, khi bản đồ bị chia cắt hoặc có vật cản động, hệ thống có phân biệt được hoàn thành đầy đủ, hoàn thành một phần và thất bại hay không. Thứ sáu, khi địa hình có trọng số hoặc bản đồ lớn hơn, hệ thống có tiếp tục vận hành theo luồng lập kế hoạch đã thiết kế hay không.
 
 \section{Môi trường chạy và chỉ số đánh giá}
 
-Chương trình mô phỏng được hiện thực bằng C++ và dùng bản đồ lưới làm đầu vào. Mỗi ô hợp lệ có thể mang chi phí địa hình. Robot di chuyển theo bốn hướng chính, có năng lượng hữu hạn, có căn cứ để quay về và có thể sạc lại khi về căn cứ. Trong cấu hình mặc định, một lần quay 90 độ tại một ô tiêu tốn bằng một nửa chi phí di chuyển qua một ô trên cùng địa hình. Đối với mô hình toàn hướng lý tưởng, tức cấu hình Metric H trong log và mã kịch bản, chi phí quay được đặt bằng 0 để tạo mô hình đối chứng.
+Chương trình mô phỏng được hiện thực bằng C++ và dùng bản đồ lưới làm đầu vào. Robot di chuyển theo bốn hướng chính, có năng lượng hữu hạn, có căn cứ để quay về và có thể sạc lại khi về căn cứ. Trong cấu hình có chi phí quay, hướng hiện tại của robot được đưa vào trạng thái lập kế hoạch. Trong mô hình toàn hướng lý tưởng, chi phí quay được bỏ qua để tạo trường hợp đối chứng.
 
-Các chỉ số được sử dụng trong đánh giá được tóm tắt trong Bảng~\ref{tab:evaluation_metrics}. Các chỉ số này được chọn vì phản ánh đồng thời ba khía cạnh: mức độ hoàn thành bao phủ, chi phí tài nguyên và trạng thái nhiệm vụ sau cùng. Trong phạm vi đồ án, một nhiệm vụ không chỉ được xem xét theo tỷ lệ bao phủ, mà còn phải xét robot có quay về căn cứ được hay không.
+Các chỉ số đánh giá được trình bày trong Bảng~\ref{tab:evaluation_metrics}. Trong các bảng kết quả, \texttt{Ret.} là số lần quay về căn cứ, \texttt{Rec.} là số lần sạc lại, \texttt{Remain} là năng lượng còn lại, \texttt{Dyn.} là số ô bị ảnh hưởng bởi vật cản động và \texttt{Base} cho biết robot có kết thúc tại căn cứ hay không.
 
 \begin{table}[!htbp]
 \centering
@@ -22,76 +22,66 @@ Các chỉ số được sử dụng trong đánh giá được tóm tắt trong
 \small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|L{0.24\textwidth}|L{0.66\textwidth}|}
+\begin{tabular}{|L{0.25\textwidth}|L{0.65\textwidth}|}
 \hline
 \textbf{Chỉ số} & \textbf{Ý nghĩa trong đánh giá} \\
 \hline
 Coverage & Tỷ lệ ô hợp lệ đã được robot bao phủ khi kết thúc mô phỏng. \\
 \hline
-Steps & Tổng số bước di chuyển đã thực hiện. Chỉ số này phản ánh độ dài hành trình rời rạc. \\
+Steps & Tổng số bước di chuyển đã thực hiện. \\
 \hline
-Total energy & Tổng năng lượng chuẩn hóa đã tiêu thụ trong toàn bộ nhiệm vụ. \\
+Total energy & Tổng năng lượng chuẩn hóa robot đã tiêu thụ trong toàn bộ nhiệm vụ. \\
 \hline
-Movement energy & Phần năng lượng dùng cho di chuyển giữa các ô kề cạnh. \\
+Remaining energy & Năng lượng còn lại tại thời điểm kết thúc kịch bản. \\
 \hline
-Turn energy & Phần năng lượng dùng cho đổi hướng. Trong mô hình toàn hướng lý tưởng, giá trị này bằng 0. \\
+Returns và recharges & Số lần robot quay về căn cứ và số lần sạc lại. \\
 \hline
-Revisit & Số bước đi vào ô đã được bao phủ trước đó. Chỉ số này phản ánh lượng đường đi lặp. \\
+Mission outcome & Trạng thái kết thúc nhiệm vụ. Trong báo cáo này, các log \texttt{PARTIAL\_RETURNED} và \texttt{PARTIAL\_PRESERVED} được trình bày gọn là \texttt{PARTIAL}. \\
 \hline
-Returns và recharges & Số lần robot quay về căn cứ và số lần sạc lại. Hai chỉ số này phản ánh số chu kỳ làm việc của robot. \\
+Final at base & Cho biết robot có kết thúc tại căn cứ hay không. \\
 \hline
-Mission outcome & Trạng thái kết thúc nhiệm vụ, gồm thành công, hoàn thành một phần nhưng quay về được, bảo toàn trạng thái hoặc thất bại. \\
-\hline
-Final at base & Cho biết robot có kết thúc tại căn cứ hay không. Đây là điều kiện quan trọng để phân biệt bao phủ xong với nhiệm vụ hoàn tất. \\
+Dynamic blocked cells & Số ô bị ảnh hưởng bởi vật cản động trong kịch bản. \\
 \hline
 \end{tabular}
 \end{table}
 
 \section{Bộ kịch bản thử nghiệm}
 
-Bộ kịch bản được chia thành nhiều nhóm để tách riêng từng yếu tố ảnh hưởng. Nhóm A dùng cùng một bản đồ chính nhưng thay đổi vị trí căn cứ. Nhóm H dùng cùng bản đồ với nhóm A để so sánh mô hình có chi phí quay với mô hình đối chứng toàn hướng. Nhóm B kiểm tra tình huống năng lượng thấp. Nhóm C kiểm tra bản đồ có mật độ vật cản cao và vùng khó tiếp cận. Nhóm D kiểm tra vật cản động chặn đường quay về. Nhóm E kiểm tra bản đồ có chi phí địa hình biến thiên. Nhóm F kiểm tra bản đồ có kích thước lớn hơn. Bảng~\ref{tab:scenario_groups} trình bày vai trò của các nhóm kịch bản.
+Bộ kịch bản cuối cùng gồm các nhóm A, H, B, C, D, E và F. Vai trò của từng nhóm được tóm tắt trong Bảng~\ref{tab:scenario_groups}. Các kịch bản trong cùng một nhóm được thiết kế để thay đổi một yếu tố chính, trong khi các yếu tố còn lại được giữ ở mức đủ ổn định để có thể diễn giải kết quả.
 
 \begin{table}[!htbp]
 \centering
-\caption{Các nhóm kịch bản thực nghiệm}
+\caption{Các nhóm kịch bản thực nghiệm cuối cùng}
 \label{tab:scenario_groups}
 \small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|C{0.12\textwidth}|L{0.32\textwidth}|L{0.46\textwidth}|}
+\begin{tabular}{|C{0.12\textwidth}|L{0.31\textwidth}|L{0.47\textwidth}|}
 \hline
-\textbf{Nhóm} & \textbf{Kịch bản đại diện} & \textbf{Mục tiêu kiểm tra} \\
+\textbf{Nhóm} & \textbf{Kịch bản} & \textbf{Mục tiêu kiểm tra} \\
 \hline
-A & A01, A02, A05, A09, A10 & Ảnh hưởng của vị trí căn cứ tới số bước, năng lượng, số lần quay về và số bước đi lại. \\
+A & A01--A10 & Ảnh hưởng của vị trí căn cứ tới số bước, năng lượng, số lần quay về và số lần sạc. \\
 \hline
-H & H01 so với A01 & Ảnh hưởng của giả định chi phí quay nhỏ không đáng kể trong mô hình đối chứng toàn hướng. \\
+H & H01, H17 & Mô hình đối chứng toàn hướng, dùng để so sánh với mô hình có chi phí quay. \\
 \hline
-B & B09 & Hành vi của robot khi dung lượng pin thấp và một số mục tiêu không còn khả thi. \\
+B & B01--B09 & Ảnh hưởng của dung lượng năng lượng tối đa khi bản đồ giữ nguyên. \\
 \hline
-C & C09 & Giới hạn của hệ thống khi mật độ vật cản cao hoặc không còn ứng viên bao phủ an toàn. \\
+C & C01--C10 & Ảnh hưởng của mật độ vật cản và tính liên thông của bản đồ. \\
 \hline
-D & D14 & Phản ứng của robot khi có vật cản động và đường quay về bị ảnh hưởng. \\
+D & D13, D14 & Hành vi khi có vật cản động ảnh hưởng tới đường đi hoặc đường quay về. \\
 \hline
-E & E07 & Ảnh hưởng của chi phí địa hình có trọng số tới tổng năng lượng. \\
+E & E01--E10 & Ảnh hưởng của địa hình có trọng số tới tổng năng lượng và số chu kỳ quay về. \\
 \hline
-F & F05 & Khả năng duy trì quy trình bao phủ trên bản đồ lớn hơn. \\
+F & F01--F05 & Khả năng mở rộng khi kích thước bản đồ tăng. \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsection*{Cách lựa chọn kịch bản trong từng nhóm}
-
-Các nhóm kịch bản trong Chương 5 không có cùng vai trò thực nghiệm. Nhóm A là nhóm khảo sát tác động của vị trí đặt căn cứ. Vì căn cứ vừa là điểm xuất phát, vừa là nơi robot phải quay về để sạc hoặc kết thúc nhiệm vụ, vị trí căn cứ ảnh hưởng trực tiếp tới chi phí quay về trung bình, số bước đi lại, tổng năng lượng và số chu kỳ làm việc. Do đó, nhóm A cần nhiều kịch bản với các vị trí căn cứ khác nhau để làm rõ xu hướng này, thay vì chỉ dùng một trường hợp đơn lẻ.
-
-Nhóm H được dùng như nhóm đối chứng theo mô hình toàn hướng lý tưởng, tương ứng với tên Metric H trong mã kịch bản và log mô phỏng. Trong báo cáo này, H01 được đối chiếu trực tiếp với A01 vì A01 là cấu hình căn cứ gần trung tâm và cho kết quả tốt nhất trong nhóm A. Cách đối chiếu này tách tác động của chi phí quay khỏi tác động của vị trí căn cứ. Nếu thay đổi đồng thời cả mô hình chi phí và vị trí căn cứ, kết quả sẽ khó diễn giải hơn vì không rõ sự khác biệt đến từ giả định toàn hướng hay từ việc đặt căn cứ ở vị trí khác.
-
-Các nhóm B, C, D, E và F kiểm tra những tình huống vận hành khó: pin thấp, bản đồ nhiều vật cản, vật cản động ảnh hưởng đường quay về, địa hình có trọng số và bản đồ lớn hơn. Các nhóm này không dùng để khẳng định một xu hướng định lượng tổng quát, mà dùng để kiểm tra xem hệ thống có dừng, quay về hoặc báo thất bại đúng trạng thái hay không. Vì vậy, mỗi nhóm chọn một kịch bản tiêu biểu để phân tích sâu.
-
-Cách thiết kế này giúp bộ thực nghiệm giữ được hai mục tiêu cùng lúc. Với các giả thuyết trung tâm như vị trí căn cứ và chi phí quay, báo cáo dùng các kịch bản đối chiếu để làm rõ tác động. Với các điều kiện kiểm tra hành vi, báo cáo chọn kịch bản đại diện để chứng minh logic vận hành của hệ thống: robot biết quay về khi cần, biết dừng khi không còn mục tiêu khả thi, phân biệt được các trạng thái kết thúc và không đánh đồng tỷ lệ bao phủ cao với nhiệm vụ thành công đầy đủ.
+Trong các bảng kết quả, tên kịch bản được rút gọn thành mã như \texttt{A01}, \texttt{B09}, \texttt{D14} hoặc \texttt{H17\_D14} để tránh tràn bảng. Tên đầy đủ của kịch bản vẫn được giữ trong file dữ liệu gốc.
 
 \section{Ảnh hưởng của vị trí căn cứ}
 
-Nhóm kịch bản A dùng cùng một bản đồ kích thước 35x30 với 924 ô hợp lệ, nhưng thay đổi vị trí căn cứ. Trong nhóm này, điểm tham chiếu trung tâm được lấy là vị trí của A01, tức ô $(18,15)$. Khoảng cách trong bảng là khoảng cách Manhattan từ căn cứ của từng kịch bản tới điểm tham chiếu đó. Mục tiêu của thí nghiệm là kiểm tra trực giác rằng căn cứ càng gần vùng trung tâm thì đường quay về trung bình càng ngắn, nhờ đó robot phải đi lặp ít hơn và tiêu thụ ít năng lượng hơn.
+Nhóm A dùng cùng một bản đồ chính kích thước 35$\times$30 với 924 ô hợp lệ và mật độ vật cản 12\%, nhưng thay đổi vị trí căn cứ. Kết quả được trình bày trong Bảng~\ref{tab:base_position_results}.
 
 \begin{table}[!htbp]
 \centering
@@ -100,135 +90,257 @@ Nhóm kịch bản A dùng cùng một bản đồ kích thước 35x30 với 92
 \small
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|L{0.18\textwidth}|C{0.13\textwidth}|C{0.11\textwidth}|R{0.10\textwidth}|R{0.13\textwidth}|R{0.11\textwidth}|R{0.10\textwidth}|R{0.12\textwidth}|}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.16\textwidth}|R{0.10\textwidth}|R{0.09\textwidth}|R{0.11\textwidth}|R{0.07\textwidth}|R{0.07\textwidth}|R{0.09\textwidth}|L{0.15\textwidth}|}
 \hline
-\textbf{Kịch bản} & \textbf{Căn cứ} & \textbf{Khoảng cách} & \textbf{Steps} & \textbf{Energy} & \textbf{Revisit} & \textbf{Returns} & \textbf{Recharges} \\
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Remain} & \textbf{Outcome} \\
 \hline
-A01 center & (18,15) & 0 & 1414 & 1625.0 & 491 & 10 & 9 \\
+\texttt{A01} & 100.00\% & 1370 & 1574.5 & 9 & 8 & 32.5 & SUCCESS \\
 \hline
-A10 off-center & (12,10) & 11 & 1512 & 1721.5 & 589 & 11 & 10 \\
+\texttt{A02} & 100.00\% & 1816 & 2055.5 & 12 & 11 & 88 & SUCCESS \\
 \hline
-A09 E-center & (18,30) & 15 & 1662 & 2079.0 & 739 & 13 & 12 \\
+\texttt{A03} & 100.00\% & 1704 & 1925 & 11 & 10 & 42 & SUCCESS \\
 \hline
-A02 NW corner & (1,1) & 31 & 1888 & 2122.5 & 965 & 13 & 12 \\
+\texttt{A04} & 100.00\% & 1638 & 1848.5 & 11 & 10 & 91.5 & SUCCESS \\
 \hline
-A05 SE corner & (35,30) & 32 & 1734 & 1958.0 & 811 & 12 & 11 \\
+\texttt{A05} & 100.00\% & 1516 & 1722 & 10 & 9 & 64 & SUCCESS \\
 \hline
-\end{tabular}
+\texttt{A06} & 100.00\% & 1524 & 1733 & 10 & 9 & 45 & SUCCESS \\
+\hline
+\texttt{A07} & 100.00\% & 1494 & 1698.5 & 10 & 9 & 75 & SUCCESS \\
+\hline
+\texttt{A08} & 100.00\% & 1534 & 1755 & 10 & 9 & 33.5 & SUCCESS \\
+\hline
+\texttt{A09} & 100.00\% & 1386 & 1589.5 & 9 & 8 & 0.5 & SUCCESS \\
+\hline
+\texttt{A10} & 100.00\% & 1394 & 1606.5 & 9 & 8 & 12 & SUCCESS \\
+\hline
+\end{tabular}%
+}
 \end{table}
 
-Kết quả cho thấy A01, tức trường hợp căn cứ ở gần trung tâm, đạt cùng tỷ lệ bao phủ 100\% với số bước, năng lượng, số bước đi lại, số lần quay về và số lần sạc thấp nhất trong nhóm A. Khi căn cứ bị dịch khỏi trung tâm, robot phải trả thêm chi phí quay về căn cứ trong nhiều chu kỳ làm việc. Điều này thể hiện rõ ở A09 và A02: số lần quay về tăng lên 13, số bước đi lại tăng lần lượt lên 739 và 965, trong khi tổng năng lượng cũng tăng đáng kể.
+Tất cả các kịch bản nhóm A đều đạt coverage 100\%, kết thúc ở căn cứ và có trạng thái \texttt{SUCCESS}. Điều này cho thấy cơ chế lập kế hoạch, quay về căn cứ và sạc lại hoạt động ổn định trên bản đồ tĩnh. Tuy nhiên, vị trí căn cứ ảnh hưởng rõ tới chi phí nhiệm vụ. Trong nhóm này, \texttt{A01} có tổng năng lượng thấp nhất, với 1574.5 đơn vị năng lượng, còn \texttt{A02} có tổng năng lượng cao nhất, với 2055.5 đơn vị năng lượng. Sự khác biệt này xuất phát từ việc căn cứ càng bất lợi thì robot càng phải đi lại nhiều hơn để vừa bao phủ ô mới vừa duy trì khả năng quay về.
 
-Tuy nhiên, kết quả không cho phép kết luận rằng hiệu quả giảm tuyến tính tuyệt đối theo khoảng cách Manhattan. A05 có khoảng cách tới điểm tham chiếu lớn hơn A02 một đơn vị, nhưng lại có số bước và năng lượng thấp hơn A02. Điều này cho thấy khoảng cách tới trung tâm là một yếu tố quan trọng nhưng không phải biến duy nhất. Hiệu quả còn phụ thuộc vào phân bố vật cản, hình dạng vùng trống, hướng khởi tạo, các đường quay về khả thi và thứ tự mục tiêu mà chiến lược tham lam lựa chọn trong từng giai đoạn.
+\section{So sánh với mô hình toàn hướng lý tưởng}
 
-Về mặt hành vi, thí nghiệm này xác nhận vai trò của căn cứ trong bài toán có ràng buộc quay về. Nếu chỉ xét bài toán bao phủ thuần túy, vị trí bắt đầu có thể được xem như một chi tiết khởi tạo. Trong mô hình của đồ án, căn cứ là điểm mà robot phải quay về nhiều lần để sạc và cũng là điểm kết thúc nhiệm vụ. Vì vậy, vị trí căn cứ ảnh hưởng trực tiếp tới chi phí trung bình của từng chu kỳ làm việc. Đặt căn cứ gần vùng trung tâm giúp đường quay về ngắn hơn, giảm lượng đường đi lặp và làm cho ngân sách năng lượng được sử dụng hiệu quả hơn trong các kịch bản thử nghiệm.
-
-\section{Ảnh hưởng của chi phí quay khi đối chiếu với mô hình toàn hướng}
-
-Thực nghiệm H so sánh hai cấu hình trên cùng bản đồ A01. Cấu hình mặc định tính chi phí quay 90 độ bằng một nửa chi phí di chuyển qua một ô trên cùng địa hình. Cấu hình H01, tương ứng với Metric H trong log mô phỏng, đặt chi phí quay bằng 0. Mục tiêu của thí nghiệm là kiểm tra xem việc đưa chi phí quay vào hàm đánh giá có chỉ làm tăng tổng năng lượng sau cùng hay còn làm thay đổi cả quỹ đạo bao phủ.
+Nhóm H được dùng như nhóm đối chứng. Bảng~\ref{tab:omni_comparison_results} trình bày hai cặp so sánh: A01 với H01 trên bản đồ tĩnh, và D14 với H17 trên kịch bản có vật cản động.
 
 \begin{table}[!htbp]
 \centering
-\caption{So sánh cấu hình mặc định với H01 Metric H trên bản đồ A01}
-\label{tab:metric_h_comparison}
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|L{0.23\textwidth}|R{0.14\textwidth}|R{0.14\textwidth}|R{0.14\textwidth}|R{0.14\textwidth}|R{0.12\textwidth}|}
-\hline
-\textbf{Cấu hình} & \textbf{Steps} & \textbf{Total energy} & \textbf{Move energy} & \textbf{Turn energy} & \textbf{Revisit} \\
-\hline
-A01 normal & 1414 & 1625.0 & 1414.0 & 211.0 & 491 \\
-\hline
-H01 Metric H & 1194 & 1194.0 & 1194.0 & 0.0 & 271 \\
-\hline
-\textbf{Chênh lệch} & \textbf{-220} & \textbf{-431.0} & \textbf{-220.0} & \textbf{-211.0} & \textbf{-220} \\
-\hline
-\end{tabular}
-\end{table}
-
-Cả hai cấu hình đều đạt coverage 100\% và kết thúc tại căn cứ. Tuy nhiên, H01 Metric H giảm 220 bước, tương ứng khoảng 15.6\% so với cấu hình mặc định. Tổng năng lượng giảm từ 1625.0 xuống 1194.0, tức giảm 431.0 đơn vị, tương ứng khoảng 26.5\%. Phần giảm này gồm hai thành phần. Thành phần trực tiếp là 211.0 đơn vị năng lượng quay bị loại bỏ. Thành phần còn lại là 220.0 đơn vị năng lượng di chuyển, tương ứng với việc robot đi ít bước hơn và đi lại ít hơn.
-
-Kết quả này cho thấy chi phí quay không chỉ là một số hạng cộng thêm vào tổng năng lượng. Khi quay có chi phí, hướng hiện tại của robot ảnh hưởng tới giá của các mục tiêu lân cận. Robot có xu hướng ưu tiên các đoạn đi thẳng hơn, tránh những lựa chọn khiến nó phải đổi hướng nhiều. Ngược lại, trong cấu hình Metric H, robot không bị phạt khi quay, nên các mục tiêu ở trước mặt, bên trái hoặc phía sau có thể được đánh giá gần như chỉ theo chi phí di chuyển. Do đó, giả định toàn hướng làm thay đổi cả hành vi chọn mục tiêu và số chu kỳ quay về căn cứ.
-
-Số lần quay về và sạc cũng giảm trong H01 Metric H. Cấu hình mặc định cần 10 lần quay về và 9 lần sạc, trong khi H01 chỉ cần 8 lần quay về và 7 lần sạc. Điều này phản ánh một hệ quả quan trọng: khi quay không tiêu tốn năng lượng, mỗi chu kỳ làm việc có thể bao phủ được nhiều ô mới hơn trước khi chạm điều kiện quay về căn cứ. Vì vậy, lượng đường đi lặp trên các ô đã bao phủ cũng giảm từ 491 xuống 271. Nói cách khác, cấu hình toàn hướng không chỉ làm pin giảm chậm hơn, mà còn làm giảm số lần robot phải rời nhiệm vụ để quay về sạc.
-
-Kết quả này xác nhận vai trò đối chứng của mô hình toàn hướng lý tưởng. Metric H ở đây là tên cấu hình thực nghiệm cho giả định toàn hướng, tức chi phí quay nhỏ không đáng kể trong phạm vi mô hình lập kế hoạch. Nếu áp dụng giả định này cho robot vi sai hai bánh có chi phí quay đáng kể, hệ thống sẽ đánh giá thấp năng lượng cần thiết và cho kế hoạch lạc quan hơn thực tế. Vì vậy, mô hình toàn hướng trong đồ án được dùng để làm rõ ảnh hưởng của chi phí quay, không phải để thay thế mô hình chính.
-
-\section{Năng lượng thấp, vùng khó tiếp cận và vật cản động}
-
-Nhóm tiếp theo kiểm tra các tình huống mà hệ thống không thể hoặc không nên cố đạt thành công đầy đủ. Đây là nhóm thực nghiệm đại diện cho logic vận hành của hệ thống trong điều kiện khó, thay vì nhóm nhằm chứng minh một xu hướng định lượng mới. Ý nghĩa chính của nhóm này là cho thấy hệ thống không chỉ chạy theo tỷ lệ bao phủ, mà còn phân biệt trạng thái nhiệm vụ theo khả năng quay về, mức độ an toàn và nguyên nhân kết thúc.
-
-\begin{table}[!htbp]
-\centering
-\caption{Kết quả các kịch bản có ràng buộc vận hành khó}
-\label{tab:difficult_operation_results}
+\caption{So sánh mô hình có chi phí quay với mô hình đối chứng toàn hướng}
+\label{tab:omni_comparison_results}
 \small
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|L{0.20\textwidth}|R{0.12\textwidth}|R{0.07\textwidth}|R{0.10\textwidth}|R{0.10\textwidth}|R{0.10\textwidth}|R{0.12\textwidth}|L{0.28\textwidth}|}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.18\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|C{0.08\textwidth}|L{0.15\textwidth}|}
 \hline
-\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Revisit} & \textbf{Returns} & \textbf{Recharges} & \textbf{Outcome} \\
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Dyn.} & \textbf{Base} & \textbf{Outcome} \\
 \hline
-B09 energy 050 & 55.48\% & 320 & 406.0 & 240 & 12 & 12 & PARTIAL\_RETURNED \\
+\texttt{A01} & 100.00\% & 1370 & 1574.5 & 9 & 8 & 0 & Có & SUCCESS \\
 \hline
-C09 density 35 & 93.40\% & 1938 & 2439.5 & 1302 & 12 & 12 & PARTIAL\_RETURNED \\
+\texttt{H01} & 100.00\% & 1194 & 1194 & 8 & 7 & 0 & Có & SUCCESS \\
 \hline
-D14 dynamic return & 98.59\% & 124 & 141.0 & 55 & 1 & 0 & FAILED \\
+\texttt{D14} & 98.59\% & 128 & 146 & 1 & 0 & 4 & Không & FAILED \\
 \hline
-\end{tabular}
+\texttt{H17\_D14} & 100.00\% & 148 & 148 & 1 & 0 & 4 & Có & SUCCESS \\
+\hline
+\end{tabular}%
+}
 \end{table}
 
-Trong B09, dung lượng pin tối đa chỉ là 50. Robot đạt coverage 55.48\% và vẫn kết thúc tại căn cứ với trạng thái PARTIAL\_RETURNED. Log cho thấy ở giai đoạn cuối, nhiều ứng viên bị loại vì pin hiện tại không đủ để vừa đi tới mục tiêu vừa quay về. Sau một số chu kỳ sạc, các mục tiêu còn lại bị đánh giá không khả thi ngay cả với pin đầy trong cấu hình hiện tại. Vì vậy, hệ thống kết thúc nhiệm vụ ở mức hoàn thành một phần thay vì tiếp tục di chuyển tới khi mất khả năng quay về. Kết quả này đúng với mục tiêu vận hành của hệ thống: ưu tiên thu hồi robot về căn cứ khi điều kiện năng lượng không còn an toàn.
+Trong cặp A01--H01, mô hình toàn hướng H01 vẫn đạt coverage 100\% và dùng 1194 đơn vị năng lượng, thấp hơn mô hình có chi phí quay A01 là 1574.5 đơn vị. Số bước của H01 là 1194, thấp hơn A01 là 1370 bước. Tương ứng, số bước giảm khoảng 12.85\% và tổng năng lượng giảm khoảng 24.17\%. Kết quả này cho thấy chi phí quay không chỉ làm tăng phần năng lượng cộng thêm, mà có thể ảnh hưởng trực tiếp tới đường đi và số chu kỳ quay về.
 
-Trong C09, bản đồ có mật độ vật cản cao và robot đạt coverage 93.40\% trước khi kết thúc ở trạng thái PARTIAL\_RETURNED. Trường hợp này có 1302 bước đi lại, cao hơn số ô mới được bao phủ. Điều đó cho thấy robot phải đi qua nhiều vùng đã bao phủ để tiếp cận các cụm còn lại. Ở cuối log, hệ thống không còn ứng viên an toàn hoặc khả thi để tiếp tục, trong khi robot vẫn quay về được căn cứ. Kịch bản này chỉ ra giới hạn của chiến lược chọn mục tiêu tham lam có ràng buộc: chiến lược này dừng đúng trạng thái, nhưng có thể kém hiệu quả trong bản đồ nhiều vật cản, vùng hẹp hoặc vùng bị cô lập.
+Ở cặp D14--H17, mô hình có chi phí quay trong D14 đạt 98.59\% coverage nhưng kết thúc với trạng thái \texttt{FAILED} và không quay về căn cứ. Trong khi đó, H17 đạt 100\% coverage, quay về căn cứ và kết thúc \texttt{SUCCESS}. Kết quả này không có nghĩa mô hình toàn hướng luôn tốt hơn trong mọi nhiệm vụ thực tế; nó cho thấy khi bỏ qua chi phí quay, không gian quyết định của robot trở nên thuận lợi hơn trong kịch bản hẹp và có vật cản động. Đây là lý do mô hình toàn hướng chỉ được dùng làm đối chứng, còn mô hình có chi phí quay vẫn là mô hình chính của đồ án.
 
-Trong D14, coverage đạt 98.59\% nhưng trạng thái kết thúc là FAILED và robot không kết thúc tại căn cứ. Điểm đáng chú ý không phải là tỷ lệ bao phủ thấp, mà là chuỗi trạng thái khi vật cản động ảnh hưởng tới đường quay về. Log ghi nhận robot chuyển qua các trạng thái ALERT, HOLD\_SAFE, RETURN\_TO\_BASE, WAIT\_FOR\_COMMAND và POWER\_SAVE trước khi kết thúc. Điều này cho thấy hệ thống không giả định rằng mọi nhiệm vụ đều có thể hoàn tất. Khi đường quay về bị ảnh hưởng lâu và robot không còn phương án an toàn để khôi phục nhiệm vụ, hệ thống kết thúc bằng một trạng thái không thành công thay vì tiếp tục di chuyển một cách mù quáng.
+\section{Ảnh hưởng của dung lượng năng lượng}
 
-\section{Ảnh hưởng của địa hình trọng số và kích thước bản đồ}
-
-Hai kịch bản E07 và F05 được dùng để kiểm tra thêm hai yếu tố đại diện: chi phí địa hình có trọng số và kích thước bản đồ lớn hơn. Hai yếu tố này không phải trọng tâm so sánh chính như nhóm A và H, nhưng giúp kiểm tra xem các thành phần của hệ thống có tiếp tục phối hợp được khi chi phí năng lượng không còn tỷ lệ trực tiếp với số bước hoặc khi quy mô bản đồ tăng lên. E07 có 1050 ô hợp lệ và chi phí địa hình biến thiên theo dạng gradient. F05 có kích thước 35x40 với 1120 ô hợp lệ, lớn hơn nhóm A.
+Nhóm B kiểm tra cùng một bản đồ nhưng giảm dần năng lượng tối đa từ 260 xuống 50. Kết quả được trình bày trong Bảng~\ref{tab:energy_capacity_results}.
 
 \begin{table}[!htbp]
 \centering
-\caption{Kết quả với địa hình trọng số và bản đồ lớn hơn}
-\label{tab:weighted_and_large_map_results}
+\caption{Kết quả nhóm B khi thay đổi năng lượng tối đa}
+\label{tab:energy_capacity_results}
 \small
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{|L{0.18\textwidth}|C{0.12\textwidth}|R{0.11\textwidth}|R{0.10\textwidth}|R{0.13\textwidth}|R{0.13\textwidth}|R{0.12\textwidth}|R{0.10\textwidth}|}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.16\textwidth}|R{0.07\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|R{0.09\textwidth}|L{0.15\textwidth}|}
 \hline
-\textbf{Kịch bản} & \textbf{Kích thước} & \textbf{Free cells} & \textbf{Steps} & \textbf{Total energy} & \textbf{Move energy} & \textbf{Turn energy} & \textbf{Returns} \\
+\textbf{Kịch bản} & \textbf{Emax} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Remain} & \textbf{Outcome} \\
 \hline
-E07 gradient & 30x35 & 1050 & 1680 & 5553.0 & 5004.0 & 549.0 & 14 \\
+\texttt{B01} & 260 & 100.00\% & 176 & 198 & 1 & 0 & 62 & SUCCESS \\
 \hline
-F05 scale & 35x40 & 1120 & 1924 & 2320.5 & 1924.0 & 396.5 & 6 \\
+\texttt{B02} & 220 & 100.00\% & 176 & 198 & 1 & 0 & 22 & SUCCESS \\
 \hline
-\end{tabular}
+\texttt{B03} & 180 & 100.00\% & 194 & 217 & 2 & 1 & 142 & SUCCESS \\
+\hline
+\texttt{B04} & 150 & 100.00\% & 216 & 241 & 2 & 1 & 59 & SUCCESS \\
+\hline
+\texttt{B05} & 120 & 100.00\% & 180 & 204 & 2 & 1 & 34 & SUCCESS \\
+\hline
+\texttt{B06} & 100 & 100.00\% & 206 & 231 & 3 & 2 & 62 & SUCCESS \\
+\hline
+\texttt{B07} & 70 & 100.00\% & 216 & 243 & 4 & 3 & 32 & SUCCESS \\
+\hline
+\texttt{B08} & 60 & 100.00\% & 260 & 291 & 5 & 4 & 4 & SUCCESS \\
+\hline
+\texttt{B09} & 50 & 100.00\% & 336 & 374 & 8 & 7 & 1 & SUCCESS \\
+\hline
+\end{tabular}%
+}
 \end{table}
 
-E07 cho thấy số bước không đủ để phản ánh chi phí nhiệm vụ khi bản đồ có trọng số. Mặc dù số bước là 1680, tổng năng lượng lên tới 5553.0, trong đó năng lượng di chuyển chiếm 5004.0 và năng lượng quay chiếm 549.0. Nguyên nhân là robot phải đi qua các ô có chi phí địa hình lớn hơn, làm cho một bước di chuyển không còn tương đương một đơn vị năng lượng. Kết quả này xác nhận vai trò của bản đồ có trọng số: hệ thống không chỉ đếm bước, mà đánh giá đường đi theo chi phí năng lượng chuẩn hóa.
+Các kịch bản nhóm B đều đạt coverage 100\% và kết thúc \texttt{SUCCESS}. Khi năng lượng tối đa giảm, robot phải quay về và sạc lại nhiều hơn. Chẳng hạn, B01 với năng lượng tối đa 260 chỉ cần 1 lần quay về và không cần sạc lại, trong khi B09 với năng lượng tối đa 50 cần 8 lần quay về và 7 lần sạc lại. Điều này phù hợp với thiết kế của hệ thống: robot không cố đi xa khi năng lượng thấp, mà chia nhiệm vụ thành nhiều chu kỳ ngắn để bảo toàn khả năng quay về căn cứ.
 
-F05 cho thấy hệ thống vẫn duy trì được quy trình bao phủ trên bản đồ lớn hơn với 1120 ô hợp lệ. Robot đạt coverage 100\%, quay về căn cứ thành công, thực hiện 1924 bước và tiêu thụ 2320.5 đơn vị năng lượng. Số lần quay về trong F05 là 6 và số lần sạc là 5, thấp hơn một số kịch bản nhỏ hơn nhưng có vị trí căn cứ bất lợi. Điều này nhắc lại rằng kích thước bản đồ không phải yếu tố duy nhất quyết định số lần quay về. Vị trí căn cứ, cấu trúc vật cản, chi phí địa hình và thứ tự bao phủ đều ảnh hưởng tới chi phí thực tế.
+\section{Ảnh hưởng của mật độ vật cản và tính liên thông}
 
-Kết quả F05 cho thấy trong một kịch bản lớn hơn nhóm A, các thành phần chính như Dijkstra có hướng, kiểm tra năng lượng, quay về căn cứ, sạc và tiếp tục nhiệm vụ vẫn phối hợp được với nhau để hoàn thành coverage và đưa robot về căn cứ.
+Nhóm C kiểm tra các bản đồ có mật độ vật cản tăng dần, đồng thời phân biệt trường hợp bản đồ còn liên thông và trường hợp có vùng bị chia tách. Kết quả được trình bày trong Bảng~\ref{tab:obstacle_density_results}.
 
-\section{Tổng hợp nhận xét thực nghiệm}
+\begin{table}[!htbp]
+\centering
+\caption{Kết quả nhóm C khi thay đổi mật độ vật cản}
+\label{tab:obstacle_density_results}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.18\textwidth}|R{0.08\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|C{0.06\textwidth}|L{0.15\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Obs.} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Base} & \textbf{Outcome} \\
+\hline
+\texttt{C01} & 4.95\% & 100.00\% & 1430 & 1594 & 7 & 6 & Có & SUCCESS \\
+\hline
+\texttt{C02} & 10.00\% & 100.00\% & 1424 & 1615.5 & 7 & 6 & Có & SUCCESS \\
+\hline
+\texttt{C03} & 15.05\% & 100.00\% & 1522 & 1776 & 8 & 7 & Có & SUCCESS \\
+\hline
+\texttt{C04} & 20.00\% & 100.00\% & 1516 & 1816 & 8 & 7 & Có & SUCCESS \\
+\hline
+\texttt{C05} & 24.95\% & 100.00\% & 1540 & 1887 & 8 & 7 & Có & SUCCESS \\
+\hline
+\texttt{C06} & 30.00\% & 100.00\% & 1656 & 2045 & 9 & 8 & Có & SUCCESS \\
+\hline
+\texttt{C07} & 35.05\% & 100.00\% & 2882 & 3577 & 15 & 14 & Có & SUCCESS \\
+\hline
+\texttt{C08} & 40.00\% & 100.00\% & 2080 & 2618.5 & 11 & 10 & Có & SUCCESS \\
+\hline
+\texttt{C09} & 35.05\% & 93.40\% & 1630 & 2067.5 & 9 & 9 & Có & PARTIAL \\
+\hline
+\texttt{C10} & 40.00\% & 78.41\% & 1198 & 1518 & 7 & 7 & Có & PARTIAL \\
+\hline
+\end{tabular}%
+}
+\end{table}
 
-Từ các nhóm kịch bản trên, có thể rút ra một số nhận xét chính. Trước hết, trong các bản đồ tĩnh của nhóm A và F, hệ thống hoàn thành coverage 100\% và đưa robot quay về căn cứ. Kết quả này xác nhận luồng nhiệm vụ cơ bản gồm chọn mục tiêu, lập kế hoạch đường đi, tiêu thụ năng lượng, quay về căn cứ, sạc và tiếp tục nhiệm vụ.
+Các kịch bản C01 đến C08 đều đạt coverage 100\% và kết thúc \texttt{SUCCESS}, kể cả khi mật độ vật cản tăng tới 40\% trong trường hợp bản đồ còn liên thông. Tuy nhiên, khi bản đồ bị chia tách, C09 chỉ đạt 93.40\% và C10 chỉ đạt 78.41\%. Cả hai trường hợp này đều kết thúc tại căn cứ nhưng được đánh dấu \texttt{PARTIAL}, nghĩa là robot bảo toàn trạng thái nhiệm vụ và quay về được, nhưng không thể bao phủ toàn bộ các ô hợp lệ do giới hạn tiếp cận của bản đồ. Kết quả này cho thấy hệ thống không đánh đồng việc quay về an toàn với hoàn thành đầy đủ nhiệm vụ.
 
-Thứ hai, chi phí quay có ảnh hưởng rõ rệt tới hành vi bao phủ. So sánh A01 với H01 cho thấy khi chi phí quay được bỏ qua ở mức lập kế hoạch, tổng năng lượng, số bước, số lần đi lại và số chu kỳ quay về đều giảm. Điều này chứng minh chi phí quay không chỉ ảnh hưởng tới thống kê năng lượng, mà còn thay đổi cách robot khai thác bản đồ trong từng chu kỳ làm việc.
+\section{Kịch bản vật cản động}
 
-Thứ ba, vị trí căn cứ là một yếu tố quan trọng trong bài toán có ràng buộc quay về. Căn cứ gần vùng trung tâm giúp giảm chi phí quay về trung bình, từ đó giảm số bước đi lại và số lần sạc. Tuy nhiên, xu hướng này không phải quan hệ tuyến tính tuyệt đối vì kết quả còn phụ thuộc vào cấu trúc vật cản và đường đi khả thi.
+Nhóm D kiểm tra tình huống có vật cản động ảnh hưởng tới đường đi hoặc đường quay về. Kết quả được trình bày trong Bảng~\ref{tab:dynamic_obstacle_results}.
 
-Thứ tư, các kịch bản không hoàn thành đầy đủ vẫn có giá trị đánh giá. B09, C09 và D14 cho thấy robot kết thúc ở các trạng thái khác nhau tùy nguyên nhân: thiếu năng lượng, không còn ứng viên khả thi, hoặc đường quay về bị ảnh hưởng bởi vật cản động. Việc phân biệt trạng thái kết thúc giúp báo cáo đánh giá nhiệm vụ đầy đủ hơn, thay vì chỉ nhìn vào coverage.
+\begin{table}[!htbp]
+\centering
+\caption{Kết quả nhóm D với vật cản động}
+\label{tab:dynamic_obstacle_results}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.18\textwidth}|R{0.10\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.07\textwidth}|C{0.07\textwidth}|L{0.12\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Dyn.} & \textbf{Base} & \textbf{Outcome} \\
+\hline
+\texttt{D13} & 100.00\% & 136 & 150 & 2 & Không & PARTIAL \\
+\hline
+\texttt{D14} & 98.59\% & 128 & 146 & 4 & Không & FAILED \\
+\hline
+\texttt{H17\_D14} & 100.00\% & 148 & 148 & 4 & Có & SUCCESS \\
+\hline
+\end{tabular}%
+}
+\end{table}
 
-Cuối cùng, kết quả E07 và F05 cho thấy số bước không đủ để đánh giá toàn bộ nhiệm vụ. Khi địa hình có trọng số, năng lượng có thể tăng mạnh dù số bước không tăng tương ứng. Khi bản đồ lớn hơn, hiệu quả còn phụ thuộc vào cấu trúc bản đồ và vị trí căn cứ. Do đó, đánh giá CPP trong đồ án cần kết hợp nhiều chỉ số: tỷ lệ bao phủ, số bước, năng lượng, số bước đi lại, số lần quay về/sạc và trạng thái kết thúc nhiệm vụ.
+Kịch bản D13 đạt coverage 100\% nhưng không kết thúc tại căn cứ, do đó được trình bày là \texttt{PARTIAL}. Kịch bản D14 có bốn ô bị ảnh hưởng bởi vật cản động, đạt 98.59\% coverage nhưng kết thúc \texttt{FAILED} và không ở căn cứ. Trường hợp này cho thấy tỷ lệ bao phủ cao chưa đủ để kết luận nhiệm vụ thành công nếu robot không quay về được. Khi dùng mô hình toàn hướng đối chứng H17 trên cùng nhóm tình huống, robot đạt coverage 100\%, quay về căn cứ và kết thúc \texttt{SUCCESS}. Vì vậy, nhóm D làm rõ vai trò của trạng thái kết thúc nhiệm vụ: thành công phải xét đồng thời coverage, năng lượng, khả năng quay về và tác động của vật cản động.
 
-Một nhận xét bổ sung về thiết kế thực nghiệm là số lượng kịch bản trong từng nhóm phản ánh vai trò của nhóm đó. Nhóm A cần nhiều vị trí căn cứ để khảo sát xu hướng base placement. Nhóm H cần đối chiếu trực tiếp với cấu hình tương ứng trong mô hình chính để làm rõ tác động của giả định chi phí quay. Các nhóm B, C, D, E và F dùng kịch bản đại diện để kiểm tra hành vi hệ thống trong điều kiện khó. Vì vậy, sự khác nhau về số lượng kịch bản giữa các nhóm là một lựa chọn có chủ đích, không phải sự thiếu nhất quán trong thực nghiệm.
+\section{Ảnh hưởng của địa hình có trọng số}
 
-\section{Kết chương}
+Nhóm E kiểm tra các bản đồ không chỉ khác về hình học mà còn khác về chi phí địa hình. Kết quả được trình bày trong Bảng~\ref{tab:weighted_terrain_results}.
 
-Chương này đã trình bày các kết quả thực nghiệm chính của hệ thống mô phỏng. Kết quả cho thấy hệ thống hoàn thành nhiệm vụ bao phủ trong nhiều kịch bản tĩnh, đồng thời thể hiện rõ ảnh hưởng của vị trí căn cứ, chi phí quay, năng lượng thấp, vật cản động, chi phí địa hình và kích thước bản đồ. Các kịch bản B09, C09 và D14 cũng cho thấy cần đánh giá nhiệm vụ bằng cả tỷ lệ bao phủ, khả năng quay về căn cứ và trạng thái kết thúc. Cách tổ chức thực nghiệm tách rõ nhóm khảo sát vị trí căn cứ, nhóm đối chứng toàn hướng và nhóm kiểm tra hành vi trong điều kiện khó.
+\begin{table}[!htbp]
+\centering
+\caption{Kết quả nhóm E với bản đồ có trọng số địa hình}
+\label{tab:weighted_terrain_results}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.18\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|R{0.08\textwidth}|L{0.15\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Remain} & \textbf{Outcome} \\
+\hline
+\texttt{E01} & 100.00\% & 1118 & 1159.5 & 3 & 2 & 100 & SUCCESS \\
+\hline
+\texttt{E02} & 100.00\% & 1308 & 2383.5 & 6 & 5 & 130 & SUCCESS \\
+\hline
+\texttt{E03} & 100.00\% & 1506 & 3031 & 8 & 7 & 287 & SUCCESS \\
+\hline
+\texttt{E04} & 100.00\% & 1332 & 1950.5 & 5 & 4 & 146 & SUCCESS \\
+\hline
+\texttt{E05} & 100.00\% & 1538 & 4333 & 11 & 10 & 256 & SUCCESS \\
+\hline
+\texttt{E06} & 100.00\% & 1928 & 3025 & 8 & 7 & 306 & SUCCESS \\
+\hline
+\texttt{E07} & 100.00\% & 1584 & 4993.5 & 12 & 11 & 5 & SUCCESS \\
+\hline
+\texttt{E08} & 100.00\% & 1484 & 4090.5 & 10 & 9 & 86.5 & SUCCESS \\
+\hline
+\texttt{E09} & 100.00\% & 1254 & 1521.5 & 4 & 3 & 156 & SUCCESS \\
+\hline
+\texttt{E10} & 100.00\% & 1852 & 6128.5 & 15 & 14 & 114 & SUCCESS \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+Tất cả các kịch bản nhóm E đều đạt coverage 100\% và kết thúc \texttt{SUCCESS}, nhưng tổng năng lượng thay đổi rất mạnh theo cách bố trí chi phí địa hình. E01 là bản đồ phẳng, chỉ dùng 1159.5 đơn vị năng lượng. Ngược lại, E10 dùng tới 6128.5 đơn vị năng lượng và cần 15 lần quay về. E07 cũng có mức năng lượng cao, đạt 4993.5 đơn vị. Điều này cho thấy việc đưa trọng số địa hình vào mô hình là cần thiết: hai bản đồ có cùng kích thước và cùng số ô hợp lệ vẫn có thể tạo ra chi phí nhiệm vụ rất khác nhau nếu chi phí đi qua các vùng địa hình khác nhau.
+
+\section{Khả năng mở rộng theo kích thước bản đồ}
+
+Nhóm F kiểm tra các bản đồ có kích thước tăng dần. Kết quả được trình bày trong Bảng~\ref{tab:scale_results}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Kết quả nhóm F khi tăng kích thước bản đồ}
+\label{tab:scale_results}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|L{0.16\textwidth}|C{0.10\textwidth}|R{0.07\textwidth}|R{0.09\textwidth}|R{0.08\textwidth}|R{0.10\textwidth}|R{0.06\textwidth}|R{0.06\textwidth}|L{0.15\textwidth}|}
+\hline
+\textbf{Kịch bản} & \textbf{Kích thước} & \textbf{Free} & \textbf{Coverage} & \textbf{Steps} & \textbf{Energy} & \textbf{Ret.} & \textbf{Rec.} & \textbf{Outcome} \\
+\hline
+\texttt{F01} & 20$\times$20 & 320 & 100.00\% & 558 & 679 & 4 & 3 & SUCCESS \\
+\hline
+\texttt{F02} & 25$\times$25 & 500 & 100.00\% & 836 & 1019.5 & 4 & 3 & SUCCESS \\
+\hline
+\texttt{F03} & 30$\times$30 & 720 & 100.00\% & 1152 & 1387 & 4 & 3 & SUCCESS \\
+\hline
+\texttt{F04} & 30$\times$35 & 840 & 100.00\% & 1406 & 1694 & 5 & 4 & SUCCESS \\
+\hline
+\texttt{F05} & 35$\times$40 & 1120 & 100.00\% & 1924 & 2320.5 & 6 & 5 & SUCCESS \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+Tất cả các kịch bản nhóm F đều đạt coverage 100\%, kết thúc ở căn cứ và có trạng thái \texttt{SUCCESS}. Khi số ô hợp lệ tăng từ 320 ở F01 lên 1120 ở F05, số bước tăng từ 558 lên 1924 và tổng năng lượng tăng từ 679.0 lên 2320.5. Xu hướng này phù hợp với trực giác: bản đồ lớn hơn làm tăng số ô cần bao phủ, tăng số bước di chuyển và tăng nhu cầu quay về sạc. Kết quả nhóm F cho thấy hệ thống vẫn giữ được luồng vận hành ổn định khi quy mô bản đồ tăng trong phạm vi thử nghiệm.
+
+\section{Nhận xét tổng hợp}
+
+Các kết quả thực nghiệm cho thấy hệ thống mô phỏng đáp ứng được mục tiêu chính của đồ án. Trên các bản đồ tĩnh liên thông, robot có thể bao phủ toàn bộ ô hợp lệ, quay về căn cứ và sạc lại khi cần. Khi vị trí căn cứ thay đổi, tổng số bước và năng lượng thay đổi theo chi phí quay về. Khi năng lượng tối đa giảm, robot không thất bại ngay mà tăng số chu kỳ quay về và sạc lại. Khi mật độ vật cản tăng hoặc bản đồ bị chia tách, hệ thống phân biệt được trường hợp thành công đầy đủ với trường hợp hoàn thành một phần. Khi có vật cản động, hệ thống cho thấy trạng thái kết thúc nhiệm vụ là tiêu chí quan trọng, vì coverage cao nhưng không quay về được căn cứ vẫn không phải là thành công đầy đủ. Khi địa hình có trọng số, tổng năng lượng thay đổi đáng kể, xác nhận vai trò của chi phí địa hình trong mô hình lập kế hoạch.
+
+Từ các nhóm thử nghiệm trên, có thể kết luận rằng hệ thống không chỉ thực hiện tìm đường cục bộ, mà đã tích hợp được các thành phần cần thiết của một nhiệm vụ bao phủ có ràng buộc: chọn mục tiêu chưa bao phủ, kiểm tra năng lượng, duy trì khả năng quay về, xử lý vật cản động ở mức mô phỏng, ghi nhận trạng thái kết thúc và phân biệt các kết quả \texttt{SUCCESS}, \texttt{PARTIAL} và \texttt{FAILED}. Đây là cơ sở thực nghiệm để Chương 6 tổng kết các kết quả đạt được và nêu hướng phát triển tiếp theo.
 
 \end{document}
